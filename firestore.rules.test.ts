@@ -136,6 +136,8 @@ test('firestore.rules structural invariants and Dirty Dozen adversarial payloads
   assert.ok(rulesContent.includes("rules_version = '2';"));
   assert.ok(rulesContent.includes('match /{document=**} {\n      allow read, write: if false;\n    }'));
   assert.ok(rulesContent.includes('match /users/{userId}'));
+  assert.ok(rulesContent.includes("data.themePreference in ['light', 'dark']"));
+  assert.ok(rulesContent.includes("affectedKeys().hasOnly(['themePreference', 'updatedAt'])"));
   assert.ok(rulesContent.includes('match /tasks/{taskId}'));
   assert.ok(rulesContent.includes('match /sessions/{sessionId}'));
   assert.ok(rulesContent.includes('match /journalEntries/{entryId}'));

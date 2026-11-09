@@ -51,16 +51,16 @@ export const LogSessionModal: React.FC<LogSessionModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 bg-slate-900/50 dark:bg-slate-950/75 backdrop-blur-xs flex items-center justify-center p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-log-session-title"
     >
-      <div className="bg-white border border-slate-200 rounded-2xl max-w-md w-full p-6 shadow-xl">
-        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl transition-colors">
+        <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
           <h2
             id="modal-log-session-title"
-            className="text-lg font-bold tracking-tight text-slate-900"
+            className="text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100"
           >
             Log Study Session
           </h2>
@@ -68,7 +68,7 @@ export const LogSessionModal: React.FC<LogSessionModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close log study session modal"
-            className="min-h-[40px] min-w-[40px] flex items-center justify-center text-slate-400 hover:text-slate-700 rounded-lg"
+            className="min-h-[40px] min-w-[40px] flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg"
           >
             <X className="w-5 h-5" />
           </button>
@@ -79,7 +79,7 @@ export const LogSessionModal: React.FC<LogSessionModalProps> = ({
             <div>
               <label
                 htmlFor="modal-session-weekday"
-                className="block text-xs font-medium text-slate-700 mb-1"
+                className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
               >
                 Weekday
               </label>
@@ -87,7 +87,7 @@ export const LogSessionModal: React.FC<LogSessionModalProps> = ({
                 id="modal-session-weekday"
                 value={weekday}
                 onChange={(e) => setWeekday(e.target.value as Weekday)}
-                className="w-full min-h-[42px] px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                className="w-full min-h-[42px] px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
               >
                 {WEEKDAYS.map((d) => (
                   <option key={d} value={d}>
@@ -100,7 +100,7 @@ export const LogSessionModal: React.FC<LogSessionModalProps> = ({
             <div>
               <label
                 htmlFor="modal-session-hours"
-                className="block text-xs font-medium text-slate-700 mb-1"
+                className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
               >
                 Study Hours
               </label>
@@ -112,7 +112,7 @@ export const LogSessionModal: React.FC<LogSessionModalProps> = ({
                 max="16"
                 value={hours}
                 onChange={(e) => setHours(e.target.value)}
-                className="w-full min-h-[42px] px-3 py-2 text-sm font-mono tabular-nums bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                className="w-full min-h-[42px] px-3 py-2 text-sm font-mono tabular-nums bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
               />
             </div>
           </div>
@@ -120,7 +120,7 @@ export const LogSessionModal: React.FC<LogSessionModalProps> = ({
           <div>
             <label
               htmlFor="modal-session-category"
-              className="block text-xs font-medium text-slate-700 mb-1"
+              className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
             >
               Subject Category
             </label>
@@ -128,7 +128,7 @@ export const LogSessionModal: React.FC<LogSessionModalProps> = ({
               id="modal-session-category"
               value={category}
               onChange={(e) => setCategory(e.target.value as StudyCategory)}
-              className="w-full min-h-[42px] px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+              className="w-full min-h-[42px] px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
             >
               {STUDY_CATEGORIES.map((cat) => (
                 <option key={cat} value={cat}>
@@ -141,7 +141,7 @@ export const LogSessionModal: React.FC<LogSessionModalProps> = ({
           <div>
             <label
               htmlFor="modal-session-topic"
-              className="block text-xs font-medium text-slate-700 mb-1"
+              className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
             >
               Study Topic / Milestone
             </label>
@@ -151,12 +151,12 @@ export const LogSessionModal: React.FC<LogSessionModalProps> = ({
               placeholder="e.g. Graph Traversal & Shortest Paths"
               value={topic}
               onChange={(e) => setTopic(e.target.value)}
-              className="w-full min-h-[42px] px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+              className="w-full min-h-[42px] px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
             />
           </div>
 
           {error && (
-            <p role="alert" className="text-xs font-medium text-red-600">
+            <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">
               {error}
             </p>
           )}
@@ -165,7 +165,7 @@ export const LogSessionModal: React.FC<LogSessionModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="min-h-[42px] px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 rounded-lg"
+              className="min-h-[42px] px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 rounded-lg"
             >
               Cancel
             </button>

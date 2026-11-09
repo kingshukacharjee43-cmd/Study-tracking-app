@@ -20,7 +20,7 @@ interface HomeViewProps {
   }) => string | undefined;
   onDeleteSession: (id: string) => void;
   onUpdateWeeklyGoal: (goalHours: number) => void;
-  onNavigateTab: (tab: 'home' | 'journey' | 'todos' | 'flutter') => void;
+  onNavigateTab: (tab: 'home' | 'journey' | 'todos' | 'game' | 'flutter') => void;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
@@ -119,80 +119,80 @@ export const HomeView: React.FC<HomeViewProps> = ({
         aria-label="Weekly study performance metrics"
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
       >
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="text-xs font-medium text-slate-500">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+          <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
             Weekly Study Hours
           </div>
           <div className="mt-2 flex items-baseline justify-between">
             <span
-              className="text-3xl font-bold tracking-tight text-slate-900 font-mono tabular-nums"
+              className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 font-mono tabular-nums"
               data-testid="metric-total-hours"
             >
               {metrics.totalWeeklyHours.toFixed(1)}h
             </span>
-            <span className="text-xs text-slate-500 font-mono tabular-nums">
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-mono tabular-nums">
               / {state.weeklyGoalHours}h target ({metrics.goalProgressPct}%)
             </span>
           </div>
-          <div className="mt-3 w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+          <div className="mt-3 w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-600 transition-transform duration-150 origin-left"
+              className="h-full bg-blue-600 dark:bg-blue-500 transition-transform duration-150 origin-left"
               style={{ transform: `scaleX(${metrics.goalProgressPct / 100})` }}
             />
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="text-xs font-medium text-slate-500">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+          <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
             Active Study Consistency
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-3xl font-bold tracking-tight text-slate-900 font-mono tabular-nums">
+            <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 font-mono tabular-nums">
               {metrics.activeDaysCount} / 7
             </span>
-            <span className="text-xs text-slate-500">
+            <span className="text-xs text-slate-500 dark:text-slate-400">
               days logged this week
             </span>
           </div>
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
             Avg {(metrics.totalWeeklyHours / 7).toFixed(1)} hrs/day across all subjects
           </p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="text-xs font-medium text-slate-500">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+          <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
             Peak Study Day
           </div>
           <div className="mt-2 flex items-baseline justify-between gap-2">
-            <span className="text-3xl font-bold tracking-tight text-slate-900 font-mono tabular-nums whitespace-nowrap">
+            <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 font-mono tabular-nums whitespace-nowrap">
               {metrics.peakDay} · {metrics.peakHours.toFixed(1)}h
             </span>
-            <span className="text-xs text-slate-500 whitespace-nowrap">
+            <span className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
               peak output
             </span>
           </div>
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
             {state.journal.length} structured reflections in Journey log
           </p>
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-5">
-          <div className="text-xs font-medium text-slate-500">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+          <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
             Subject Checklist Velocity
           </div>
           <div className="mt-2 flex items-baseline justify-between">
-            <span className="text-3xl font-bold tracking-tight text-slate-900 font-mono tabular-nums">
+            <span className="text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100 font-mono tabular-nums">
               {metrics.completedTasksCount} / {metrics.totalTasksCount}
             </span>
             <button
               type="button"
               onClick={() => onNavigateTab('todos')}
-              className="text-xs font-medium text-blue-600 hover:text-blue-800 underline underline-offset-2 whitespace-nowrap"
+              className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline underline-offset-2 whitespace-nowrap"
             >
               Open Todos
             </button>
           </div>
-          <p className="mt-3 text-xs text-slate-500">
+          <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">
             {metrics.taskCompletionPct}% of Hive StudyTask items completed
           </p>
         </div>
@@ -205,17 +205,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* Weekly Progress Graph Card */}
           <section
             aria-labelledby="weekly-graph-heading"
-            className="bg-white border border-slate-200 rounded-xl p-6"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6"
           >
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-slate-100">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-5 border-b border-slate-100 dark:border-slate-800">
               <div>
                 <h2
                   id="weekly-graph-heading"
-                  className="text-xl font-bold tracking-tight text-slate-900"
+                  className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100"
                 >
                   Weekly Study Progress Graph
                 </h2>
-                <p className="text-sm text-slate-500 mt-0.5">
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
                   Daily study hours mapped across weekdays with area gradient visualization
                 </p>
               </div>
@@ -223,7 +223,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               {/* Interactive Chart Mode Toggle */}
               <div className="flex items-center gap-2 self-start sm:self-auto">
                 <div
-                  className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg"
+                  className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg"
                   role="group"
                   aria-label="Chart visualization style"
                 >
@@ -232,8 +232,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     onClick={() => setChartType('area')}
                     className={`min-h-[36px] px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
                       chartType === 'area'
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                     }`}
                   >
                     Area Gradient
@@ -243,8 +243,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     onClick={() => setChartType('bar')}
                     className={`min-h-[36px] px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
                       chartType === 'bar'
-                        ? 'bg-white text-slate-900 shadow-xs'
-                        : 'text-slate-600 hover:text-slate-900'
+                        ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                     }`}
                   >
                     Bar Chart
@@ -269,17 +269,17 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* Inline Study Session Logger */}
           <section
             aria-labelledby="quick-log-heading"
-            className="bg-white border border-slate-200 rounded-xl p-6"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6"
           >
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3
                   id="quick-log-heading"
-                  className="text-base font-semibold text-slate-900"
+                  className="text-base font-semibold text-slate-900 dark:text-slate-100"
                 >
                   Log Study Hours to Graph
                 </h3>
-                <p className="text-xs text-slate-500 mt-0.5">
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                   Add a completed study session to immediately update the weekday progress curve
                 </p>
               </div>
@@ -290,7 +290,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <div className="sm:col-span-2">
                   <label
                     htmlFor="session-weekday"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
                   >
                     Weekday
                   </label>
@@ -298,7 +298,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     id="session-weekday"
                     value={weekday}
                     onChange={(e) => setWeekday(e.target.value as Weekday)}
-                    className="w-full min-h-[42px] px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="w-full min-h-[42px] px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   >
                     {WEEKDAYS.map((d) => (
                       <option key={d} value={d}>
@@ -311,7 +311,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <div className="sm:col-span-4">
                   <label
                     htmlFor="session-category"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
                   >
                     Subject Category
                   </label>
@@ -319,7 +319,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     id="session-category"
                     value={category}
                     onChange={(e) => setCategory(e.target.value as StudyCategory)}
-                    className="w-full min-h-[42px] px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="w-full min-h-[42px] px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   >
                     {STUDY_CATEGORIES.map((cat) => (
                       <option key={cat} value={cat}>
@@ -332,7 +332,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <div className="sm:col-span-2">
                   <label
                     htmlFor="session-hours"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
                   >
                     Hours
                   </label>
@@ -344,14 +344,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     max="16"
                     value={hoursInput}
                     onChange={(e) => setHoursInput(e.target.value)}
-                    className="w-full min-h-[42px] px-3 py-2 text-sm font-mono tabular-nums bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="w-full min-h-[42px] px-3 py-2 text-sm font-mono tabular-nums bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
 
                 <div className="sm:col-span-4">
                   <label
                     htmlFor="session-topic"
-                    className="block text-xs font-medium text-slate-700 mb-1"
+                    className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
                   >
                     Study Topic / Milestone
                   </label>
@@ -361,25 +361,25 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     placeholder="e.g. Dynamic Programming"
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
-                    className="w-full min-h-[42px] px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                    className="w-full min-h-[42px] px-3 py-2 text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
                   />
                 </div>
               </div>
 
               {formError && (
-                <p role="alert" className="text-xs font-medium text-red-600">
+                <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">
                   {formError}
                 </p>
               )}
               {formSuccess && (
-                <p role="status" className="text-xs font-medium text-emerald-700 flex items-center gap-1.5">
+                <p role="status" className="text-xs font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
                   <CheckCircle2 className="w-4 h-4 shrink-0" />
                   <span>{formSuccess}</span>
                 </p>
               )}
 
               <div className="flex items-center justify-between pt-1">
-                <span className="text-xs text-slate-500">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
                   Persisted locally in offline storage
                 </span>
                 <button
@@ -396,19 +396,19 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* Logged Study Sessions Table */}
           <section
             aria-labelledby="logged-sessions-heading"
-            className="bg-white border border-slate-200 rounded-xl p-6"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6"
           >
             <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
               <div>
                 <h3
                   id="logged-sessions-heading"
-                  className="text-base font-semibold text-slate-900"
+                  className="text-base font-semibold text-slate-900 dark:text-slate-100"
                 >
                   {selectedDay
                     ? `Study Sessions on ${selectedDay}`
                     : 'All Logged Study Sessions This Week'}
                 </h3>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
                   Showing {filteredSessions.length} session{filteredSessions.length === 1 ? '' : 's'}
                 </p>
               </div>
@@ -416,7 +416,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedDay(null)}
-                  className="min-h-[36px] px-3 py-1.5 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors whitespace-nowrap shrink-0"
+                  className="min-h-[36px] px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
                 >
                   Show All Days
                 </button>
@@ -424,8 +424,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
             </div>
 
             {filteredSessions.length === 0 ? (
-              <div className="py-8 text-center border border-dashed border-slate-200 rounded-lg">
-                <p className="text-sm text-slate-600">
+              <div className="py-8 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-lg">
+                <p className="text-sm text-slate-600 dark:text-slate-400">
                   No study sessions logged for {selectedDay} yet.
                 </p>
                 <button
@@ -434,24 +434,24 @@ export const HomeView: React.FC<HomeViewProps> = ({
                     if (selectedDay) setWeekday(selectedDay);
                     document.getElementById('session-topic')?.focus();
                   }}
-                  className="mt-3 min-h-[40px] px-4 py-2 text-xs font-medium text-blue-600 hover:text-blue-800 underline underline-offset-2"
+                  className="mt-3 min-h-[40px] px-4 py-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 underline underline-offset-2"
                 >
                   Log First Session for {selectedDay}
                 </button>
               </div>
             ) : (
-              <div className="divide-y divide-slate-100">
+              <div className="divide-y divide-slate-100 dark:divide-slate-800">
                 {filteredSessions.map((session) => (
                   <div
                     key={session.id}
-                    className="py-3 flex items-center justify-between gap-4 hover:bg-slate-50/70 px-2 rounded-lg transition-colors"
+                    className="py-3 flex items-center justify-between gap-4 hover:bg-slate-50/70 dark:hover:bg-slate-800/50 px-2 rounded-lg transition-colors"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-slate-900 truncate">
+                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 truncate">
                         {session.topic}
                       </p>
-                      <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
-                        <span className="font-medium text-slate-700">{session.weekday}</span>
+                      <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                        <span className="font-medium text-slate-700 dark:text-slate-300">{session.weekday}</span>
                         <span aria-hidden="true">·</span>
                         <span>{session.category}</span>
                         <span aria-hidden="true">·</span>
@@ -459,14 +459,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
                       </div>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-sm font-semibold text-slate-900 font-mono tabular-nums">
+                      <span className="text-sm font-semibold text-slate-900 dark:text-slate-100 font-mono tabular-nums">
                         {session.hours.toFixed(1)}h
                       </span>
                       <button
                         type="button"
                         onClick={() => onDeleteSession(session.id)}
                         aria-label={`Delete study session '${session.topic}'`}
-                        className="min-h-[40px] min-w-[40px] flex items-center justify-center text-slate-400 hover:text-red-600 rounded-lg transition-colors"
+                        className="min-h-[40px] min-w-[40px] flex items-center justify-center text-slate-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -483,23 +483,23 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* Focus Timer Card */}
           <section
             aria-labelledby="focus-timer-heading"
-            className="bg-white border border-slate-200 rounded-xl p-6"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6"
           >
             <div className="flex items-center justify-between mb-3">
               <h3
                 id="focus-timer-heading"
-                className="text-base font-semibold text-slate-900"
+                className="text-base font-semibold text-slate-900 dark:text-slate-100"
               >
                 Deep Work Focus Timer
               </h3>
-              <span className="text-xs font-mono tabular-nums text-slate-500">
+              <span className="text-xs font-mono tabular-nums text-slate-500 dark:text-slate-400">
                 {timerPresetMinutes} min block
               </span>
             </div>
 
             {/* Preset Selector */}
             <div
-              className="flex items-center gap-1 p-1 bg-slate-100 rounded-lg mb-4"
+              className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg mb-4"
               role="group"
               aria-label="Timer duration presets"
             >
@@ -514,8 +514,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   }}
                   className={`flex-1 min-h-[36px] py-1.5 text-xs font-medium rounded-md transition-colors font-mono tabular-nums whitespace-nowrap ${
                     timerPresetMinutes === mins
-                      ? 'bg-white text-slate-900 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
+                      ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
                   }`}
                 >
                   {mins}m
@@ -523,14 +523,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
               ))}
             </div>
 
-            <div className="py-5 text-center bg-slate-50 rounded-xl border border-slate-100">
+            <div className="py-5 text-center bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800">
               <div
-                className="text-4xl font-bold tracking-tight text-slate-900 font-mono tabular-nums"
+                className="text-4xl font-bold tracking-tight text-slate-900 dark:text-slate-100 font-mono tabular-nums"
                 aria-live="polite"
               >
                 {formatTimer(timerSeconds)}
               </div>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 Target subject: {timerCategory}
               </p>
             </div>
@@ -538,7 +538,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <div className="mt-4">
               <label
                 htmlFor="timer-subject-select"
-                className="block text-xs font-medium text-slate-700 mb-1"
+                className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1"
               >
                 Focus Subject
               </label>
@@ -546,7 +546,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 id="timer-subject-select"
                 value={timerCategory}
                 onChange={(e) => setTimerCategory(e.target.value as StudyCategory)}
-                className="w-full min-h-[40px] px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900"
+                className="w-full min-h-[40px] px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
               >
                 {STUDY_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
@@ -560,7 +560,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsRunning((prev) => !prev)}
-                className="min-h-[44px] px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+                className="min-h-[44px] px-4 py-2 bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-500 text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
               >
                 {isRunning ? (
                   <>
@@ -581,7 +581,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   setIsRunning(false);
                   setTimerSeconds(timerPresetMinutes * 60);
                 }}
-                className="min-h-[44px] px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+                className="min-h-[44px] px-4 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
               >
                 <RotateCcw className="w-4 h-4" />
                 <span>Reset</span>
@@ -591,7 +591,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
             <button
               type="button"
               onClick={handleLogTimerSession}
-              className="w-full mt-2 min-h-[42px] px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-medium rounded-lg transition-colors whitespace-nowrap"
+              className="w-full mt-2 min-h-[42px] px-4 py-2 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg transition-colors whitespace-nowrap"
             >
               Complete & Log Block to Graph
             </button>
@@ -600,15 +600,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* Subject Distribution Breakdown */}
           <section
             aria-labelledby="subject-breakdown-heading"
-            className="bg-white border border-slate-200 rounded-xl p-6"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6"
           >
             <h3
               id="subject-breakdown-heading"
-              className="text-base font-semibold text-slate-900"
+              className="text-base font-semibold text-slate-900 dark:text-slate-100"
             >
               Hours by Subject
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5 mb-4">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">
               Cumulative distribution across {STUDY_CATEGORIES.length} study categories
             </p>
 
@@ -622,14 +622,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 return (
                   <div key={cat}>
                     <div className="flex items-center justify-between text-xs mb-1">
-                      <span className="font-medium text-slate-800">{cat}</span>
-                      <span className="font-mono tabular-nums text-slate-500">
+                      <span className="font-medium text-slate-800 dark:text-slate-200">{cat}</span>
+                      <span className="font-mono tabular-nums text-slate-500 dark:text-slate-400">
                         {hrs.toFixed(1)}h · {pct}%
                       </span>
                     </div>
-                    <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                       <div
-                        className="h-full bg-blue-600 transition-transform duration-150 origin-left"
+                        className="h-full bg-blue-600 dark:bg-blue-500 transition-transform duration-150 origin-left"
                         style={{ transform: `scaleX(${pct / 100})` }}
                       />
                     </div>
@@ -642,15 +642,15 @@ export const HomeView: React.FC<HomeViewProps> = ({
           {/* Weekly Target Adjustment */}
           <section
             aria-labelledby="weekly-goal-heading"
-            className="bg-white border border-slate-200 rounded-xl p-6"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6"
           >
             <h3
               id="weekly-goal-heading"
-              className="text-base font-semibold text-slate-900"
+              className="text-base font-semibold text-slate-900 dark:text-slate-100"
             >
               Weekly Study Goal
             </h3>
-            <p className="text-xs text-slate-500 mt-0.5 mb-3">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-3">
               Adjust your weekly target hours to calibrate daily graph benchmarks
             </p>
             <div className="flex items-center gap-2">
@@ -662,8 +662,8 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   aria-pressed={state.weeklyGoalHours === goal}
                   className={`flex-1 min-h-[40px] py-2 text-xs font-mono tabular-nums font-medium rounded-lg transition-colors whitespace-nowrap ${
                     state.weeklyGoalHours === goal
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      ? 'bg-slate-900 dark:bg-blue-600 text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
                   {goal}h/wk

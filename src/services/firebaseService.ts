@@ -32,6 +32,7 @@ import {
   StudySession,
   JournalEntry,
   StudyTrekState,
+  ThemePreference,
   INITIAL_STUDY_STATE,
   BLUEPRINT_LIMITS,
 } from '../utils/studyEngine';
@@ -131,7 +132,17 @@ export function loadUserLocalState(uid: string): StudyTrekState {
     if (raw) {
       const parsed = JSON.parse(raw) as StudyTrekState;
       if (parsed && Array.isArray(parsed.tasks) && Array.isArray(parsed.sessions)) {
-        return parsed;
+        return {
+          ...parsed,
+          themePreference: parsed.themePreference === 'dark' ? 'dark' : 'light',
+          widgets: Array.isArray(parsed.widgets)
+            ? parsed.widgets
+            : INITIAL_STUDY_STATE.widgets,
+          friends: Array.isArray(parsed.friends)
+            ? parsed.friends
+            : INITIAL_STUDY_STATE.friends,
+          gameXp: typeof parsed.gameXp === 'number' ? parsed.gameXp : INITIAL_STUDY_STATE.gameXp,
+        };
       }
     }
   } catch {
@@ -139,6 +150,10 @@ export function loadUserLocalState(uid: string): StudyTrekState {
   }
   const seeded: StudyTrekState = {
     weeklyGoalHours: INITIAL_STUDY_STATE.weeklyGoalHours,
+    themePreference: INITIAL_STUDY_STATE.themePreference,
+    widgets: INITIAL_STUDY_STATE.widgets,
+    friends: INITIAL_STUDY_STATE.friends,
+    gameXp: INITIAL_STUDY_STATE.gameXp,
     tasks: INITIAL_STUDY_STATE.tasks.map((t) => ({ ...t, ownerId: uid })),
     sessions: INITIAL_STUDY_STATE.sessions.map((s) => ({ ...s, ownerId: uid })),
     journal: INITIAL_STUDY_STATE.journal.map((j) => ({ ...j, ownerId: uid })),
@@ -158,7 +173,8 @@ export function saveUserLocalState(uid: string, state: StudyTrekState): void {
 // Ensure /users/{uid} exists in Firestore for verified Firebase users
 export async function ensureFirestoreUserProfile(
   user: User,
-  weeklyGoalHours = 25
+  weeklyGoalHours = 25,
+  themePreference: ThemePreference = 'light'
 ): Promise<boolean> {
   if (!user.emailVerified) {
     return false;
@@ -180,6 +196,7 @@ export async function ensureFirestoreUserProfile(
         ownerId: user.uid,
         displayName: safeDisplayName || 'Student',
         weeklyGoalHours: Math.min(168, Math.max(1, Math.round(weeklyGoalHours))),
+        themePreference: themePreference === 'dark' ? 'dark' : 'light',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -329,6 +346,22 @@ export async function syncUpdateWeeklyGoalInFirestore(
   }
 }
 
+export async function syncUpdateThemePreferenceInFirestore(
+  uid: string,
+  themePreference: ThemePreference
+): Promise<void> {
+  if (!auth.currentUser || !auth.currentUser.emailVerified || auth.currentUser.uid !== uid) return;
+  const path = `users/${uid}`;
+  try {
+    await updateDoc(doc(db, 'users', uid), {
+      themePreference: themePreference === 'dark' ? 'dark' : 'light',
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+}
+
 // Subscribe to real-time Firestore collections scoped strictly to ownerId == uid
 export function subscribeToUserFirestoreData(
   user: User,
@@ -337,6 +370,7 @@ export function subscribeToUserFirestoreData(
     onSessions: (sessions: StudySession[]) => void;
     onJournal: (entries: JournalEntry[]) => void;
     onWeeklyGoal: (goal: number) => void;
+    onThemePreference: (theme: ThemePreference) => void;
   }
 ): Unsubscribe {
   if (!user.emailVerified) {
@@ -351,6 +385,9 @@ export function subscribeToUserFirestoreData(
         const data = snap.data();
         if (typeof data.weeklyGoalHours === 'number') {
           callbacks.onWeeklyGoal(data.weeklyGoalHours);
+        }
+        if (data.themePreference === 'dark' || data.themePreference === 'light') {
+          callbacks.onThemePreference(data.themePreference);
         }
       }
     },

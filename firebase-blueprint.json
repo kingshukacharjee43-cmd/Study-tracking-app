@@ -22,6 +22,13 @@
           "type": "number",
           "description": "Weekly study target in hours (between 1 and 168)."
         },
+        "themePreference": {
+          "type": "string",
+          "description": "User UI theme preference ('light' or 'dark').",
+          "enum": ["light", "dark"],
+          "minLength": 4,
+          "maxLength": 5
+        },
         "createdAt": {
           "type": "string",
           "format": "date-time",
@@ -37,6 +44,7 @@
         "ownerId",
         "displayName",
         "weeklyGoalHours",
+        "themePreference",
         "createdAt",
         "updatedAt"
       ]

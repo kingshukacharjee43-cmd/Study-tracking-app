@@ -8,6 +8,7 @@ import {
   StudyTrekState,
   StudyCategory,
   Weekday,
+  ThemePreference,
   addStudyTask,
   toggleStudyTask,
   deleteStudyTask,
@@ -28,11 +29,13 @@ import {
   syncCreateSessionToFirestore,
   syncCreateJournalToFirestore,
   syncUpdateWeeklyGoalInFirestore,
+  syncUpdateThemePreferenceInFirestore,
   signOutCurrentUser,
 } from './services/firebaseService';
 import { HomeView } from './components/HomeView';
 import { JourneyView } from './components/JourneyView';
 import { TodoView } from './components/TodoView';
+import { StudyGameView } from './components/StudyGameView';
 import { FlutterReleaseView } from './components/FlutterReleaseView';
 import { AuthModal } from './components/AuthModal';
 import { LogSessionModal } from './components/LogSessionModal';
@@ -41,12 +44,21 @@ import {
   BookOpen,
   CheckCircle2,
   Code2,
+  Gamepad2,
   UserCheck,
   LogOut,
   RotateCcw,
+  Moon,
+  Sun,
 } from 'lucide-react';
+import {
+  toggleDeviceWidget,
+  connectStudyFriend,
+  DEFAULT_DEVICE_WIDGETS,
+  DEFAULT_STUDY_FRIENDS,
+} from './utils/studyEngine';
 
-type ActiveTab = 'home' | 'journey' | 'todos' | 'flutter';
+type ActiveTab = 'home' | 'journey' | 'todos' | 'game' | 'flutter';
 
 const PRESET_STUDENT_ACCOUNTS: AuthenticatedAccount[] = [
   {
@@ -73,6 +85,10 @@ function ensureSecondAccountSeed() {
   if (!localStorage.getItem(key)) {
     const priyaState: StudyTrekState = {
       weeklyGoalHours: 30,
+      themePreference: 'light',
+      widgets: DEFAULT_DEVICE_WIDGETS,
+      friends: DEFAULT_STUDY_FRIENDS,
+      gameXp: 1450,
       sessions: [
         {
           id: 'priya-sess-1',
@@ -166,6 +182,12 @@ export default function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isLogModalOpen, setIsLogModalOpen] = useState<boolean>(false);
 
+  // Sync the active user's themePreference with the root <html> element for Tailwind dark:* variants
+  useEffect(() => {
+    const isDark = studyState.themePreference === 'dark';
+    document.documentElement.classList.toggle('dark', isDark);
+  }, [studyState.themePreference]);
+
   // Listen to Firebase Auth state changes
   useEffect(() => {
     let unsubFirestore: (() => void) | null = null;
@@ -210,6 +232,8 @@ export default function App() {
                 setStudyState((prev) => ({ ...prev, journal })),
               onWeeklyGoal: (weeklyGoalHours) =>
                 setStudyState((prev) => ({ ...prev, weeklyGoalHours })),
+              onThemePreference: (themePreference) =>
+                setStudyState((prev) => ({ ...prev, themePreference })),
             });
           } catch (e) {
             console.error(e);
@@ -239,6 +263,52 @@ export default function App() {
   useEffect(() => {
     saveUserLocalState(currentAccount.uid, studyState);
   }, [currentAccount.uid, studyState]);
+
+  // Toggle dark/light theme and persist to Firestore user profile + isolated account store
+  const handleToggleTheme = () => {
+    const nextTheme: ThemePreference =
+      studyState.themePreference === 'dark' ? 'light' : 'dark';
+    setStudyState((prev) => ({ ...prev, themePreference: nextTheme }));
+    if (currentAccount.isCloudSynced) {
+      syncUpdateThemePreferenceInFirestore(currentAccount.uid, nextTheme).catch(
+        console.error
+      );
+    }
+  };
+
+  // Toggle Home Screen / Lock Screen Widget
+  const handleToggleWidget = (widgetId: string) => {
+    setStudyState((prev) => ({
+      ...prev,
+      widgets: toggleDeviceWidget(
+        prev.widgets || DEFAULT_DEVICE_WIDGETS,
+        widgetId
+      ),
+    }));
+  };
+
+  // Connect Friend via Friend Sign-In Code or Email
+  const handleConnectFriend = (input: {
+    friendCodeOrEmail: string;
+    displayName?: string;
+    topCategory?: StudyCategory;
+  }): string | undefined => {
+    const res = connectStudyFriend(
+      studyState.friends || DEFAULT_STUDY_FRIENDS,
+      input
+    );
+    if (res.error) return res.error;
+    setStudyState((prev) => ({ ...prev, friends: res.friends }));
+    return undefined;
+  };
+
+  // Earn XP in Study Game
+  const handleEarnGameXp = (xpDelta: number) => {
+    setStudyState((prev) => ({
+      ...prev,
+      gameXp: (prev.gameXp ?? 1320) + xpDelta,
+    }));
+  };
 
   // Handlers for Sessions
   const handleAddSession = (input: {
@@ -400,10 +470,12 @@ export default function App() {
     handleSelectAccount(nextAcct);
   };
 
+  const isDark = studyState.themePreference === 'dark';
+
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 text-slate-900 pb-20 md:pb-12">
+    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-20 md:pb-12 transition-colors">
       {/* Top Bar Contract: 3 Zones separated by gap-8 */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-30">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 transition-colors">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-8 px-4 sm:px-6 h-14">
           {/* Zone 1: Single text element wordmark */}
           <a
@@ -412,15 +484,15 @@ export default function App() {
               e.preventDefault();
               setActiveTab('home');
             }}
-            className="text-base sm:text-lg font-bold tracking-tight text-slate-900 font-display whitespace-nowrap shrink-0"
+            className="text-base sm:text-lg font-bold tracking-tight text-slate-900 dark:text-slate-100 font-display whitespace-nowrap shrink-0"
           >
             Lectra: Study Timer & Checklist
           </a>
 
-          {/* Zone 2: 4 concise single-line text navigation links */}
+          {/* Zone 2: 5 concise single-line text navigation links */}
           <nav
             aria-label="Primary navigation"
-            className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600"
+            className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-400"
           >
             <a
               href="#home"
@@ -431,8 +503,8 @@ export default function App() {
               aria-current={activeTab === 'home' ? 'page' : undefined}
               className={`py-1 transition-colors whitespace-nowrap shrink-0 ${
                 activeTab === 'home'
-                  ? 'text-slate-900 font-semibold underline decoration-blue-600 decoration-2 underline-offset-8'
-                  : 'hover:text-slate-900 hover:underline underline-offset-8'
+                  ? 'text-slate-900 dark:text-slate-100 font-semibold underline decoration-blue-600 dark:decoration-blue-400 decoration-2 underline-offset-8'
+                  : 'hover:text-slate-900 dark:hover:text-slate-100 hover:underline underline-offset-8'
               }`}
             >
               Home
@@ -446,8 +518,8 @@ export default function App() {
               aria-current={activeTab === 'journey' ? 'page' : undefined}
               className={`py-1 transition-colors whitespace-nowrap shrink-0 ${
                 activeTab === 'journey'
-                  ? 'text-slate-900 font-semibold underline decoration-blue-600 decoration-2 underline-offset-8'
-                  : 'hover:text-slate-900 hover:underline underline-offset-8'
+                  ? 'text-slate-900 dark:text-slate-100 font-semibold underline decoration-blue-600 dark:decoration-blue-400 decoration-2 underline-offset-8'
+                  : 'hover:text-slate-900 dark:hover:text-slate-100 hover:underline underline-offset-8'
               }`}
             >
               Journey
@@ -461,11 +533,26 @@ export default function App() {
               aria-current={activeTab === 'todos' ? 'page' : undefined}
               className={`py-1 transition-colors whitespace-nowrap shrink-0 ${
                 activeTab === 'todos'
-                  ? 'text-slate-900 font-semibold underline decoration-blue-600 decoration-2 underline-offset-8'
-                  : 'hover:text-slate-900 hover:underline underline-offset-8'
+                  ? 'text-slate-900 dark:text-slate-100 font-semibold underline decoration-blue-600 dark:decoration-blue-400 decoration-2 underline-offset-8'
+                  : 'hover:text-slate-900 dark:hover:text-slate-100 hover:underline underline-offset-8'
               }`}
             >
               Todos
+            </a>
+            <a
+              href="#game"
+              onClick={(e) => {
+                e.preventDefault();
+                setActiveTab('game');
+              }}
+              aria-current={activeTab === 'game' ? 'page' : undefined}
+              className={`py-1 transition-colors whitespace-nowrap shrink-0 ${
+                activeTab === 'game'
+                  ? 'text-slate-900 dark:text-slate-100 font-semibold underline decoration-blue-600 dark:decoration-blue-400 decoration-2 underline-offset-8'
+                  : 'hover:text-slate-900 dark:hover:text-slate-100 hover:underline underline-offset-8'
+              }`}
+            >
+              Study Game
             </a>
             <a
               href="#flutter"
@@ -476,8 +563,8 @@ export default function App() {
               aria-current={activeTab === 'flutter' ? 'page' : undefined}
               className={`py-1 transition-colors whitespace-nowrap shrink-0 ${
                 activeTab === 'flutter'
-                  ? 'text-slate-900 font-semibold underline decoration-blue-600 decoration-2 underline-offset-8'
-                  : 'hover:text-slate-900 hover:underline underline-offset-8'
+                  ? 'text-slate-900 dark:text-slate-100 font-semibold underline decoration-blue-600 dark:decoration-blue-400 decoration-2 underline-offset-8'
+                  : 'hover:text-slate-900 dark:hover:text-slate-100 hover:underline underline-offset-8'
               }`}
             >
               Flutter & ASO
@@ -489,7 +576,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setIsLogModalOpen(true)}
-              className="min-h-[38px] px-4 py-2 text-xs font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-lg transition-colors whitespace-nowrap shrink-0"
+              className="min-h-[38px] px-4 py-2 text-xs font-semibold text-white bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-500 rounded-lg transition-colors whitespace-nowrap shrink-0"
             >
               Log Study Session
             </button>
@@ -498,38 +585,60 @@ export default function App() {
       </header>
 
       {/* Workspace Account Context Bar (Below the fold of the Top Bar) */}
-      <div className="bg-slate-100/80 border-b border-slate-200">
+      <div className="bg-slate-100/80 dark:bg-slate-900/70 border-b border-slate-200 dark:border-slate-800 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
-          <div className="flex flex-wrap items-center gap-2 text-slate-600">
-            <UserCheck className="w-4 h-4 text-blue-600 shrink-0" />
-            <span className="font-semibold text-slate-900" data-testid="active-account-name">
+          <div className="flex flex-wrap items-center gap-2 text-slate-600 dark:text-slate-400">
+            <UserCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+            <span className="font-semibold text-slate-900 dark:text-slate-100" data-testid="active-account-name">
               {currentAccount.displayName}
             </span>
             <span aria-hidden="true">·</span>
-            <span className="font-mono text-slate-500">
+            <span className="font-mono text-slate-500 dark:text-slate-400">
               {currentAccount.email || currentAccount.uid}
             </span>
             <span aria-hidden="true">·</span>
-            <span className="text-slate-500">
+            <span className="text-slate-500 dark:text-slate-400">
               {currentAccount.isCloudSynced
                 ? 'Firebase Auth + Firestore Synced'
                 : 'Account-Scoped Local + Firebase Auth Ready'}
             </span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Dark / Light Theme Toggle persisted in Firestore profile & account workspace */}
+            <button
+              type="button"
+              onClick={handleToggleTheme}
+              aria-label="Toggle dark theme"
+              aria-pressed={isDark}
+              data-testid="theme-toggle-button"
+              className="min-h-[34px] px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
+            >
+              {isDark ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-slate-600" />
+                  <span>Dark Mode</span>
+                </>
+              )}
+            </button>
+
             <button
               type="button"
               onClick={() => setIsAuthModalOpen(true)}
-              className="min-h-[34px] px-3 py-1 bg-white border border-slate-200 hover:bg-slate-50 text-slate-800 font-medium rounded-lg transition-colors whitespace-nowrap shrink-0"
+              className="min-h-[34px] px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium rounded-lg transition-colors whitespace-nowrap shrink-0"
             >
-              Firebase Sign In / Switch Account
+              Firebase & Friend Sign-In
             </button>
             <button
               type="button"
               onClick={handleSignOut}
               aria-label="Sign out or switch active student account"
-              className="min-h-[34px] px-2.5 py-1 text-slate-600 hover:text-slate-900 font-medium rounded-lg transition-colors flex items-center gap-1 whitespace-nowrap shrink-0"
+              className="min-h-[34px] px-2.5 py-1 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 font-medium rounded-lg transition-colors flex items-center gap-1 whitespace-nowrap shrink-0"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Switch User</span>
@@ -538,7 +647,7 @@ export default function App() {
               type="button"
               onClick={handleResetDemoData}
               aria-label="Reset current account demo data"
-              className="min-h-[34px] px-2.5 py-1 text-slate-500 hover:text-slate-800 rounded-lg transition-colors flex items-center gap-1 whitespace-nowrap shrink-0"
+              className="min-h-[34px] px-2.5 py-1 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg transition-colors flex items-center gap-1 whitespace-nowrap shrink-0"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">Reset Data</span>
@@ -569,10 +678,25 @@ export default function App() {
 
         {activeTab === 'todos' && (
           <TodoView
+            state={studyState}
             tasks={studyState.tasks}
             onAddTask={handleAddTask}
             onToggleTask={handleToggleTask}
             onDeleteTask={handleDeleteTask}
+            onToggleWidget={handleToggleWidget}
+          />
+        )}
+
+        {activeTab === 'game' && (
+          <StudyGameView
+            state={studyState}
+            currentAccountName={currentAccount.displayName}
+            currentAccountUid={currentAccount.uid}
+            onEarnXp={handleEarnGameXp}
+            onConnectFriend={handleConnectFriend}
+            onLogGameStudySession={(input) => {
+              handleAddSession(input);
+            }}
           />
         )}
 
@@ -580,25 +704,27 @@ export default function App() {
       </main>
 
       {/* Quiet Footer */}
-      <footer className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 border-t border-slate-200 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <footer className="max-w-7xl w-full mx-auto px-4 sm:px-6 py-6 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2">
         <span>
           Lectra: Study Timer & Checklist · Open-Source MIT License · Material 3 Architecture
         </span>
         <span>
-          Data strictly isolated per authenticated UID ({currentAccount.uid})
+          Data strictly isolated per authenticated UID ({currentAccount.uid}) · Theme: {studyState.themePreference}
         </span>
       </footer>
 
       {/* Mobile Material 3 Bottom NavigationBar */}
       <nav
         aria-label="Mobile bottom navigation"
-        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 grid grid-cols-4 items-center h-14"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 grid grid-cols-5 items-center h-14"
       >
         <button
           type="button"
           onClick={() => setActiveTab('home')}
           className={`min-h-[44px] flex flex-col items-center justify-center ${
-            activeTab === 'home' ? 'text-blue-600 font-semibold' : 'text-slate-500'
+            activeTab === 'home'
+              ? 'text-blue-600 dark:text-blue-400 font-semibold'
+              : 'text-slate-500 dark:text-slate-400'
           }`}
         >
           <BarChart3 className="w-5 h-5" />
@@ -609,7 +735,9 @@ export default function App() {
           type="button"
           onClick={() => setActiveTab('journey')}
           className={`min-h-[44px] flex flex-col items-center justify-center ${
-            activeTab === 'journey' ? 'text-blue-600 font-semibold' : 'text-slate-500'
+            activeTab === 'journey'
+              ? 'text-blue-600 dark:text-blue-400 font-semibold'
+              : 'text-slate-500 dark:text-slate-400'
           }`}
         >
           <BookOpen className="w-5 h-5" />
@@ -620,7 +748,9 @@ export default function App() {
           type="button"
           onClick={() => setActiveTab('todos')}
           className={`min-h-[44px] flex flex-col items-center justify-center ${
-            activeTab === 'todos' ? 'text-blue-600 font-semibold' : 'text-slate-500'
+            activeTab === 'todos'
+              ? 'text-blue-600 dark:text-blue-400 font-semibold'
+              : 'text-slate-500 dark:text-slate-400'
           }`}
         >
           <CheckCircle2 className="w-5 h-5" />
@@ -629,9 +759,24 @@ export default function App() {
 
         <button
           type="button"
+          onClick={() => setActiveTab('game')}
+          className={`min-h-[44px] flex flex-col items-center justify-center ${
+            activeTab === 'game'
+              ? 'text-blue-600 dark:text-blue-400 font-semibold'
+              : 'text-slate-500 dark:text-slate-400'
+          }`}
+        >
+          <Gamepad2 className="w-5 h-5" />
+          <span className="text-[10px] mt-0.5 whitespace-nowrap">Game</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setActiveTab('flutter')}
           className={`min-h-[44px] flex flex-col items-center justify-center ${
-            activeTab === 'flutter' ? 'text-blue-600 font-semibold' : 'text-slate-500'
+            activeTab === 'flutter'
+              ? 'text-blue-600 dark:text-blue-400 font-semibold'
+              : 'text-slate-500 dark:text-slate-400'
           }`}
         >
           <Code2 className="w-5 h-5" />
@@ -646,6 +791,7 @@ export default function App() {
         currentAccount={currentAccount}
         presetAccounts={PRESET_STUDENT_ACCOUNTS}
         onSelectAccount={handleSelectAccount}
+        onConnectFriend={handleConnectFriend}
       />
 
       <LogSessionModal

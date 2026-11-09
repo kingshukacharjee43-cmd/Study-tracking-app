@@ -71,15 +71,15 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
 
   return (
     <div className="w-full" data-testid="study-progress-chart">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-3 text-xs text-slate-600">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-3 text-xs text-slate-600 dark:text-slate-400">
         <div className="flex items-center gap-4">
-          <span className="font-medium text-slate-900">
+          <span className="font-medium text-slate-900 dark:text-slate-100">
             Selected: {activePoint.day} ({activePoint.val.toFixed(1)} hrs)
           </span>
           <span aria-hidden="true">·</span>
           <span>Daily Target: {dailyTargetHours.toFixed(1)} hrs/day</span>
         </div>
-        <div className="text-slate-500 font-mono tabular-nums">
+        <div className="text-slate-500 dark:text-slate-400 font-mono tabular-nums">
           fl_chart · LineChartBarData(isCurved: true)
         </div>
       </div>
@@ -93,13 +93,13 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
         >
           <defs>
             <linearGradient id="trekAreaGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#2563eb" stopOpacity="0.34" />
-              <stop offset="65%" stopColor="#3b82f6" stopOpacity="0.10" />
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.38" />
+              <stop offset="65%" stopColor="#3b82f6" stopOpacity="0.12" />
               <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
             </linearGradient>
             <linearGradient id="trekBarGradient" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#2563eb" stopOpacity="0.92" />
-              <stop offset="100%" stopColor="#1d4ed8" stopOpacity="0.75" />
+              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.92" />
+              <stop offset="100%" stopColor="#2563eb" stopOpacity="0.75" />
             </linearGradient>
           </defs>
 
@@ -113,7 +113,7 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
                   y1={y}
                   x2={width - padRight}
                   y2={y}
-                  stroke="#e2e8f0"
+                  className="stroke-slate-200 dark:stroke-slate-800"
                   strokeDasharray={idx === 0 ? undefined : '4 4'}
                   strokeWidth="1"
                 />
@@ -121,7 +121,7 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
                   x={padLeft - 10}
                   y={y + 4}
                   textAnchor="end"
-                  className="fill-slate-400 text-[11px] font-mono tabular-nums"
+                  className="fill-slate-400 dark:fill-slate-500 text-[11px] font-mono tabular-nums"
                 >
                   {tick.toFixed(1)}h
                 </text>
@@ -137,8 +137,7 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
                 y1={targetY}
                 x2={width - padRight}
                 y2={targetY}
-                stroke="#0f172a"
-                strokeOpacity="0.28"
+                className="stroke-slate-900/30 dark:stroke-slate-300/30"
                 strokeDasharray="6 4"
                 strokeWidth="1.25"
               />
@@ -146,7 +145,7 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
                 x={width - padRight - 4}
                 y={targetY - 6}
                 textAnchor="end"
-                className="fill-slate-500 text-[10px] font-mono tabular-nums"
+                className="fill-slate-500 dark:fill-slate-400 text-[10px] font-mono tabular-nums"
               >
                 Goal {dailyTargetHours.toFixed(1)}h
               </text>
@@ -162,7 +161,7 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
               <path
                 d={linePath}
                 fill="none"
-                stroke="#2563eb"
+                stroke="#3b82f6"
                 strokeWidth="3.25"
                 strokeLinecap="round"
                 strokeLinejoin="round"
@@ -174,7 +173,7 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
                 y1={padTop}
                 x2={activePoint.x}
                 y2={baselineY}
-                stroke="#94a3b8"
+                className="stroke-slate-400 dark:stroke-slate-600"
                 strokeDasharray="3 3"
                 strokeWidth="1"
               />
@@ -201,16 +200,20 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
                         cx={pt.x}
                         cy={pt.y}
                         r={9}
-                        fill="#2563eb"
-                        fillOpacity="0.16"
+                        fill="#3b82f6"
+                        fillOpacity="0.22"
                       />
                     )}
                     <circle
                       cx={pt.x}
                       cy={pt.y}
                       r={isSelected ? 5.5 : 4}
-                      fill={isSelected ? '#2563eb' : '#ffffff'}
-                      stroke="#2563eb"
+                      className={
+                        isSelected
+                          ? 'fill-blue-600 dark:fill-blue-400'
+                          : 'fill-white dark:fill-slate-900'
+                      }
+                      stroke="#3b82f6"
                       strokeWidth={isSelected ? 3 : 2.25}
                     />
                     <text
@@ -219,8 +222,8 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
                       textAnchor="middle"
                       className={`text-[11px] font-mono tabular-nums transition-opacity ${
                         isSelected
-                          ? 'fill-slate-900 font-semibold opacity-100'
-                          : 'fill-slate-500 opacity-75'
+                          ? 'fill-slate-900 dark:fill-slate-100 font-semibold opacity-100'
+                          : 'fill-slate-500 dark:fill-slate-400 opacity-80'
                       }`}
                     >
                       {pt.val.toFixed(1)}h
@@ -256,7 +259,7 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
                     x={pt.x}
                     y={pt.y - 8}
                     textAnchor="middle"
-                    className="fill-slate-700 text-[11px] font-mono tabular-nums font-medium"
+                    className="fill-slate-700 dark:fill-slate-300 text-[11px] font-mono tabular-nums font-medium"
                   >
                     {pt.val.toFixed(1)}h
                   </text>
@@ -276,7 +279,9 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
                 textAnchor="middle"
                 onClick={() => onSelectDay(pt.day)}
                 className={`cursor-pointer text-xs font-medium ${
-                  isSelected ? 'fill-blue-600 font-semibold' : 'fill-slate-600'
+                  isSelected
+                    ? 'fill-blue-600 dark:fill-blue-400 font-semibold'
+                    : 'fill-slate-600 dark:fill-slate-400'
                 }`}
               >
                 {pt.day}
@@ -288,7 +293,7 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
 
       {/* Accessible Weekday Button Bar for Keyboard / Touch Selection */}
       <div
-        className="grid grid-cols-7 gap-1.5 mt-3 pt-3 border-t border-slate-100"
+        className="grid grid-cols-7 gap-1.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800"
         role="group"
         aria-label="Filter sessions by weekday"
       >
@@ -303,14 +308,14 @@ export const StudyAreaChart: React.FC<StudyAreaChartProps> = ({
               aria-pressed={isSelected}
               className={`min-h-[44px] px-2 py-1.5 rounded-lg text-center transition-colors flex flex-col items-center justify-center ${
                 isSelected
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-50 text-slate-700 hover:bg-slate-100'
+                  ? 'bg-slate-900 dark:bg-blue-600 text-white'
+                  : 'bg-slate-50 dark:bg-slate-800/70 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
               }`}
             >
               <span className="text-[11px] font-medium whitespace-nowrap">{day}</span>
               <span
                 className={`text-xs font-mono tabular-nums ${
-                  isSelected ? 'text-blue-200' : 'text-slate-500'
+                  isSelected ? 'text-blue-200 dark:text-blue-100' : 'text-slate-500 dark:text-slate-400'
                 }`}
               >
                 {hrs.toFixed(1)}h

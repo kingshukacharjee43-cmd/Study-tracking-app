@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   INITIAL_STUDY_STATE,
   PLAY_STORE_NAME_CANDIDATES,
+  DEFAULT_DEVICE_WIDGETS,
+  DEFAULT_STUDY_FRIENDS,
   addStudyTask,
   toggleStudyTask,
   deleteStudyTask,
@@ -11,6 +13,11 @@ import {
   addStudySession,
   addJournalEntry,
   calculateStudyMetrics,
+  calculateDigitalWellbeingStats,
+  getPeriodAchievements,
+  toggleDeviceWidget,
+  connectStudyFriend,
+  generateStudyGameQuestions,
   generateFlutterCodeArtifacts,
 } from './studyEngine';
 
@@ -96,10 +103,49 @@ test('Journal entry validation and metrics calculation', () => {
   assert.equal(metrics.peakHours, 4.5);
 });
 
-test('Lectra branding, Play Store ASO candidates, and Flutter Firebase Auth generator', () => {
-  const artifacts = generateFlutterCodeArtifacts(INITIAL_STUDY_STATE);
+test('Digital Wellbeing stats, Daily/Weekly/Monthly Achievements, Widgets, Friend Connect, and Study Game', () => {
+  const wellbeing = calculateDigitalWellbeingStats(INITIAL_STUDY_STATE);
+  assert.ok(wellbeing.grandTotalFocusMinutes > 0);
+  assert.equal(wellbeing.slices.length, 6);
+  assert.ok(wellbeing.wellbeingScore > 0 && wellbeing.wellbeingScore <= 100);
+
+  const daily = getPeriodAchievements(INITIAL_STUDY_STATE, 'daily');
+  const weekly = getPeriodAchievements(INITIAL_STUDY_STATE, 'weekly');
+  const monthly = getPeriodAchievements(INITIAL_STUDY_STATE, 'monthly');
+  assert.equal(daily.badges.length, 3);
+  assert.equal(weekly.badges.length, 3);
+  assert.equal(monthly.badges.length, 3);
+  assert.equal(weekly.badges[0].unlocked, true);
+
+  const toggledWidgets = toggleDeviceWidget(
+    DEFAULT_DEVICE_WIDGETS,
+    'widget-home-graph'
+  );
+  const graphWidget = toggledWidgets.find((w) => w.id === 'widget-home-graph');
+  assert.equal(graphWidget?.enabled, true);
+
+  const friendAdd = connectStudyFriend(DEFAULT_STUDY_FRIENDS, {
+    friendCodeOrEmail: 'LECTRA-LIAM-07',
+    displayName: 'Liam Chen',
+    topCategory: 'Computer Science',
+  });
+  assert.equal(friendAdd.error, undefined);
+  assert.equal(friendAdd.friends.length, DEFAULT_STUDY_FRIENDS.length + 1);
+  assert.equal(friendAdd.added?.displayName, 'Liam Chen');
+
+  const questions = generateStudyGameQuestions(INITIAL_STUDY_STATE, 'All');
+  assert.ok(questions.length >= 6);
+  assert.ok(questions.some((q) => q.topicTitle.includes('Firebase Auth')));
+});
+
+test('Lectra branding, Play Store ASO candidates, themePreference, and Flutter Firebase Auth generator', () => {
+  assert.equal(INITIAL_STUDY_STATE.themePreference, 'light');
+  const darkState = { ...INITIAL_STUDY_STATE, themePreference: 'dark' as const };
+  const artifacts = generateFlutterCodeArtifacts(darkState);
   assert.ok(artifacts.mainDart.includes('Lectra: Study Timer & Checklist'));
+  assert.ok(artifacts.mainDart.includes('ThemeMode.dark'));
   assert.ok(artifacts.firebaseAuthDart.includes('signInWithGoogle'));
+  assert.ok(artifacts.firebaseAuthDart.includes('updateThemePreference'));
   assert.ok(artifacts.firebaseAuthDart.includes('createUserWithEmailAndPassword'));
   assert.ok(artifacts.hiveTaskEngineDart.includes('class StudyTaskManager'));
   assert.ok(artifacts.flChartWidgetDart.includes('LineChartBarData'));

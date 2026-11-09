@@ -56,8 +56,8 @@ service cloud.firestore {
     // Validation Blueprint: UserProfile
     function isValidUserProfile(data) {
       return isVerifiedUser() &&
-        data.keys().hasAll(['ownerId', 'displayName', 'weeklyGoalHours', 'createdAt', 'updatedAt']) &&
-        data.keys().hasOnly(['ownerId', 'displayName', 'weeklyGoalHours', 'createdAt', 'updatedAt']) &&
+        data.keys().hasAll(['ownerId', 'displayName', 'weeklyGoalHours', 'themePreference', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'displayName', 'weeklyGoalHours', 'themePreference', 'createdAt', 'updatedAt']) &&
         data.ownerId is string &&
         data.ownerId.size() >= 1 &&
         data.ownerId.size() <= 128 &&
@@ -69,6 +69,10 @@ service cloud.firestore {
         data.weeklyGoalHours is number &&
         data.weeklyGoalHours >= 1 &&
         data.weeklyGoalHours <= 168 &&
+        data.themePreference is string &&
+        data.themePreference.size() >= 4 &&
+        data.themePreference.size() <= 5 &&
+        data.themePreference in ['light', 'dark'] &&
         data.createdAt is timestamp &&
         data.updatedAt is timestamp;
     }
@@ -241,8 +245,10 @@ service cloud.firestore {
         incoming().updatedAt == request.time && (
           // Action: UpdateWeeklyGoal
           (incoming().diff(existing()).affectedKeys().hasOnly(['weeklyGoalHours', 'updatedAt'])) ||
+          // Action: UpdateThemePreference
+          (incoming().diff(existing()).affectedKeys().hasOnly(['themePreference', 'updatedAt'])) ||
           // Action: UpdateProfileDisplayName
-          (incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'weeklyGoalHours', 'updatedAt']))
+          (incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'weeklyGoalHours', 'themePreference', 'updatedAt']))
         )
       );
       allow delete: if isVerifiedUser() && isValidId(userId) && existing().ownerId == request.auth.uid;

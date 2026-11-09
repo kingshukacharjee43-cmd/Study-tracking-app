@@ -69,12 +69,113 @@ export interface JournalEntry {
   keyTakeaway: string;
 }
 
+export type ThemePreference = 'light' | 'dark';
+
+export interface DeviceWidgetConfig {
+  id: string;
+  title: string;
+  surface: 'home_screen' | 'lock_screen';
+  sizeSpec: '4x2' | '2x2' | '2x1' | '1x1';
+  description: string;
+  enabled: boolean;
+}
+
+export interface StudyFriend {
+  id: string;
+  friendCode: string;
+  displayName: string;
+  email: string;
+  avatarInitials: string;
+  weeklyHours: number;
+  streakDays: number;
+  activeTopic: string;
+  topCategory: StudyCategory;
+  status: 'Studying Now' | 'Completed Daily Goal' | 'In Study Game';
+  xpScore: number;
+}
+
 export interface StudyTrekState {
   tasks: StudyTask[];
   sessions: StudySession[];
   journal: JournalEntry[];
   weeklyGoalHours: number;
+  themePreference: ThemePreference;
+  widgets?: DeviceWidgetConfig[];
+  friends?: StudyFriend[];
+  gameXp?: number;
 }
+
+export const DEFAULT_DEVICE_WIDGETS: DeviceWidgetConfig[] = [
+  {
+    id: 'widget-home-wellbeing',
+    title: 'Digital Wellbeing Focus Ring',
+    surface: 'home_screen',
+    sizeSpec: '2x2',
+    description: 'Live radial subject focus breakdown, daily screen-on study time, and target ring',
+    enabled: true,
+  },
+  {
+    id: 'widget-home-checklist',
+    title: 'Subject Todo Checklist',
+    surface: 'home_screen',
+    sizeSpec: '4x2',
+    description: 'Interactive Material 3 checklist to tick off pending StudyTask items from Home Screen',
+    enabled: true,
+  },
+  {
+    id: 'widget-home-graph',
+    title: 'Weekly Study Curve & Timer',
+    surface: 'home_screen',
+    sizeSpec: '4x2',
+    description: 'Mini fl_chart area gradient with 1-tap 25m Pomodoro focus launcher',
+    enabled: false,
+  },
+  {
+    id: 'widget-lock-next-task',
+    title: 'Lock Screen Next Priority Task',
+    surface: 'lock_screen',
+    sizeSpec: '2x1',
+    description: 'Android 15 Glance Lock Screen pill displaying top High-priority due task & countdown',
+    enabled: true,
+  },
+  {
+    id: 'widget-lock-streak-ring',
+    title: 'Lock Screen Daily Goal Ring',
+    surface: 'lock_screen',
+    sizeSpec: '1x1',
+    description: 'Compact circular complication showing daily study hours vs goal & streak flame',
+    enabled: true,
+  },
+];
+
+export const DEFAULT_STUDY_FRIENDS: StudyFriend[] = [
+  {
+    id: 'friend-priya',
+    friendCode: 'LECTRA-PRIYA-42',
+    displayName: 'Priya Nair',
+    email: 'priya.nair@mit.edu',
+    avatarInitials: 'PN',
+    weeklyHours: 23.5,
+    streakDays: 12,
+    activeTopic: 'Quantum Harmonic Oscillator & Ladder Operators',
+    topCategory: 'Physics',
+    status: 'Studying Now',
+    xpScore: 1450,
+  },
+  {
+    id: 'friend-maya',
+    friendCode: 'LECTRA-MAYA-19',
+    displayName: 'Maya Lin',
+    email: 'maya.lin@berkeley.edu',
+    avatarInitials: 'ML',
+    weeklyHours: 19.8,
+    streakDays: 9,
+    activeTopic: 'Distributed Consensus & Raft Replication',
+    topCategory: 'Systems Design',
+    status: 'Completed Daily Goal',
+    xpScore: 1280,
+  },
+];
 
 export interface PlayStoreNameCandidate {
   title: string;
@@ -124,6 +225,10 @@ export const PLAY_STORE_NAME_CANDIDATES: PlayStoreNameCandidate[] = [
 
 export const INITIAL_STUDY_STATE: StudyTrekState = {
   weeklyGoalHours: 25,
+  themePreference: 'light',
+  widgets: DEFAULT_DEVICE_WIDGETS,
+  friends: DEFAULT_STUDY_FRIENDS,
+  gameXp: 1320,
   sessions: [
     {
       id: 'sess-1',
@@ -526,6 +631,499 @@ export function calculateStudyMetrics(state: StudyTrekState) {
   };
 }
 
+// --- Digital Wellbeing Graph & Daily/Weekly/Monthly Achievements Engine ---
+
+export interface WellbeingSubjectSlice {
+  category: StudyCategory;
+  sessionHours: number;
+  completedTaskMinutes: number;
+  pendingTaskMinutes: number;
+  totalFocusMinutes: number;
+  sharePct: number;
+  strokeColor: string;
+  bgClass: string;
+}
+
+const CATEGORY_WELLBEING_COLORS: Record<
+  StudyCategory,
+  { stroke: string; bg: string }
+> = {
+  'Computer Science': { stroke: '#2563eb', bg: 'bg-blue-600' },
+  Mathematics: { stroke: '#0d9488', bg: 'bg-teal-600' },
+  Physics: { stroke: '#7c3aed', bg: 'bg-violet-600' },
+  'Systems Design': { stroke: '#f59e0b', bg: 'bg-amber-500' },
+  Languages: { stroke: '#10b981', bg: 'bg-emerald-500' },
+  Literature: { stroke: '#ec4899', bg: 'bg-pink-500' },
+};
+
+export function calculateDigitalWellbeingStats(state: StudyTrekState) {
+  const rawSlices = STUDY_CATEGORIES.map((category) => {
+    const sessionHours = state.sessions
+      .filter((s) => s.category === category)
+      .reduce((acc, s) => acc + s.hours, 0);
+    const catTasks = state.tasks.filter((t) => t.category === category);
+    const completedTaskMinutes = catTasks
+      .filter((t) => t.isCompleted)
+      .reduce((acc, t) => acc + t.estimatedMinutes, 0);
+    const pendingTaskMinutes = catTasks
+      .filter((t) => !t.isCompleted)
+      .reduce((acc, t) => acc + t.estimatedMinutes, 0);
+    const totalFocusMinutes = Math.round(sessionHours * 60 + completedTaskMinutes);
+
+    return {
+      category,
+      sessionHours: Math.round(sessionHours * 10) / 10,
+      completedTaskMinutes,
+      pendingTaskMinutes,
+      totalFocusMinutes,
+      strokeColor: CATEGORY_WELLBEING_COLORS[category].stroke,
+      bgClass: CATEGORY_WELLBEING_COLORS[category].bg,
+    };
+  });
+
+  const grandTotalFocusMinutes = rawSlices.reduce(
+    (sum, s) => sum + s.totalFocusMinutes,
+    0
+  );
+  const totalPlannedTaskMinutes = state.tasks.reduce(
+    (sum, t) => sum + t.estimatedMinutes,
+    0
+  );
+  const totalCompletedTaskMinutes = state.tasks
+    .filter((t) => t.isCompleted)
+    .reduce((sum, t) => sum + t.estimatedMinutes, 0);
+
+  const slices: WellbeingSubjectSlice[] = rawSlices.map((s) => ({
+    ...s,
+    sharePct:
+      grandTotalFocusMinutes > 0
+        ? Math.round((s.totalFocusMinutes / grandTotalFocusMinutes) * 100)
+        : 0,
+  }));
+
+  const wellbeingScore = Math.min(
+    100,
+    Math.round(
+      (totalPlannedTaskMinutes > 0
+        ? (totalCompletedTaskMinutes / totalPlannedTaskMinutes) * 55
+        : 30) +
+        Math.min(45, (grandTotalFocusMinutes / (state.weeklyGoalHours * 60 || 1500)) * 45)
+    )
+  );
+
+  return {
+    slices,
+    grandTotalFocusMinutes,
+    grandTotalFocusHours: Math.round((grandTotalFocusMinutes / 60) * 10) / 10,
+    totalPlannedTaskMinutes,
+    totalCompletedTaskMinutes,
+    wellbeingScore,
+  };
+}
+
+export type AchievementPeriod = 'daily' | 'weekly' | 'monthly';
+
+export interface AchievementBadge {
+  id: string;
+  title: string;
+  subtitle: string;
+  currentLabel: string;
+  targetLabel: string;
+  progressPct: number;
+  unlocked: boolean;
+}
+
+export interface PeriodAchievementSummary {
+  period: AchievementPeriod;
+  headlineStat: string;
+  headlineSubtext: string;
+  secondaryStat: string;
+  tertiaryStat: string;
+  badges: AchievementBadge[];
+}
+
+export function getPeriodAchievements(
+  state: StudyTrekState,
+  period: AchievementPeriod
+): PeriodAchievementSummary {
+  const metrics = calculateStudyMetrics(state);
+  const completedTasks = metrics.completedTasksCount;
+  const totalTasks = metrics.totalTasksCount;
+  const journalCount = state.journal.length;
+
+  if (period === 'daily') {
+    const todayHours = metrics.weeklyMap.Mon || metrics.peakHours || 3.5;
+    const dailyGoal = Math.max(1, Math.round((state.weeklyGoalHours / 7) * 10) / 10);
+    const dailyPct = Math.min(100, Math.round((todayHours / dailyGoal) * 100));
+
+    return {
+      period: 'daily',
+      headlineStat: `${todayHours.toFixed(1)}h / ${dailyGoal.toFixed(1)}h`,
+      headlineSubtext: 'Daily Deep-Work Screen Balance',
+      secondaryStat: `${completedTasks} tasks checked off`,
+      tertiaryStat: `${dailyPct}% of daily focus target`,
+      badges: [
+        {
+          id: 'daily-sprinter',
+          title: 'Deep Work Sprinter',
+          subtitle: 'Log at least 2.0 hours of focused study in a single day',
+          currentLabel: `${todayHours.toFixed(1)}h`,
+          targetLabel: '2.0h',
+          progressPct: Math.min(100, Math.round((todayHours / 2.0) * 100)),
+          unlocked: todayHours >= 2.0,
+        },
+        {
+          id: 'daily-checklist',
+          title: 'Checklist Momentum',
+          subtitle: 'Complete 2 or more Subject Todo tasks',
+          currentLabel: `${completedTasks} done`,
+          targetLabel: '2 tasks',
+          progressPct: Math.min(100, Math.round((completedTasks / 2) * 100)),
+          unlocked: completedTasks >= 2,
+        },
+        {
+          id: 'daily-recall',
+          title: 'Active Recall Scribe',
+          subtitle: 'Record at least 1 structured study reflection in Journey',
+          currentLabel: `${journalCount} logged`,
+          targetLabel: '1 entry',
+          progressPct: Math.min(100, journalCount * 100),
+          unlocked: journalCount >= 1,
+        },
+      ],
+    };
+  }
+
+  if (period === 'weekly') {
+    const activeSubjects = STUDY_CATEGORIES.filter(
+      (c) => (metrics.categoryHours[c] || 0) > 0
+    ).length;
+
+    return {
+      period: 'weekly',
+      headlineStat: `${metrics.totalWeeklyHours.toFixed(1)}h / ${state.weeklyGoalHours}h`,
+      headlineSubtext: 'Weekly Goal Progress & Consistency',
+      secondaryStat: `${metrics.activeDaysCount}/7 active days`,
+      tertiaryStat: `${activeSubjects} subjects studied`,
+      badges: [
+        {
+          id: 'weekly-streak',
+          title: '7-Day Consistency Streak',
+          subtitle: 'Log study sessions across all 7 weekdays (Mon–Sun)',
+          currentLabel: `${metrics.activeDaysCount}/7 days`,
+          targetLabel: '7 days',
+          progressPct: Math.min(100, Math.round((metrics.activeDaysCount / 7) * 100)),
+          unlocked: metrics.activeDaysCount >= 7,
+        },
+        {
+          id: 'weekly-polymath',
+          title: 'Multi-Subject Polymath',
+          subtitle: 'Distribute focus across at least 4 distinct academic subjects',
+          currentLabel: `${activeSubjects} subjects`,
+          targetLabel: '4 subjects',
+          progressPct: Math.min(100, Math.round((activeSubjects / 4) * 100)),
+          unlocked: activeSubjects >= 4,
+        },
+        {
+          id: 'weekly-goal-crusher',
+          title: 'Weekly Target Finisher',
+          subtitle: `Reach 100% of your ${state.weeklyGoalHours}h weekly study goal`,
+          currentLabel: `${metrics.totalWeeklyHours.toFixed(1)}h`,
+          targetLabel: `${state.weeklyGoalHours}h`,
+          progressPct: metrics.goalProgressPct,
+          unlocked: metrics.totalWeeklyHours >= state.weeklyGoalHours,
+        },
+      ],
+    };
+  }
+
+  // Monthly
+  const monthlyHours = Math.round(metrics.totalWeeklyHours * 4 * 10) / 10;
+  const monthlyTarget = state.weeklyGoalHours * 4;
+  const monthlyPct = Math.min(100, Math.round((monthlyHours / monthlyTarget) * 100));
+  const monthlyTasksCompleted = completedTasks * 4;
+
+  return {
+    period: 'monthly',
+    headlineStat: `${monthlyHours.toFixed(1)}h / ${monthlyTarget}h`,
+    headlineSubtext: '30-Day Cumulative Study Projection',
+    secondaryStat: `${monthlyTasksCompleted} monthly tasks mastered`,
+    tertiaryStat: `${monthlyPct}% monthly pace`,
+    badges: [
+      {
+        id: 'monthly-centurion',
+        title: 'Centurion Scholar (80h+ Month)',
+        subtitle: 'Sustain an 80+ hour monthly study pace across 4 weeks',
+        currentLabel: `${monthlyHours.toFixed(0)}h`,
+        targetLabel: '80h',
+        progressPct: Math.min(100, Math.round((monthlyHours / 80) * 100)),
+        unlocked: monthlyHours >= 80,
+      },
+      {
+        id: 'monthly-zero-backlog',
+        title: 'Checklist Master',
+        subtitle: 'Maintain at least 50% completion across all subject checklists',
+        currentLabel: `${metrics.taskCompletionPct}%`,
+        targetLabel: '50%',
+        progressPct: Math.min(100, Math.round((metrics.taskCompletionPct / 50) * 100)),
+        unlocked: metrics.taskCompletionPct >= 50,
+      },
+      {
+        id: 'monthly-journal-habit',
+        title: 'Reflective Researcher',
+        subtitle: 'Build a repository of 3+ high-depth study journal takeaways',
+        currentLabel: `${journalCount} entries`,
+        targetLabel: '3 entries',
+        progressPct: Math.min(100, Math.round((journalCount / 3) * 100)),
+        unlocked: journalCount >= 3,
+      },
+    ],
+  };
+}
+
+// --- Home Screen & Lock Screen Widget Management ---
+
+export function toggleDeviceWidget(
+  widgets: DeviceWidgetConfig[],
+  widgetId: string
+): DeviceWidgetConfig[] {
+  return widgets.map((w) =>
+    w.id === widgetId ? { ...w, enabled: !w.enabled } : w
+  );
+}
+
+// --- Friend Sign-In & Study Circle Connect ---
+
+export function connectStudyFriend(
+  friends: StudyFriend[],
+  input: {
+    friendCodeOrEmail: string;
+    displayName?: string;
+    topCategory?: StudyCategory;
+  }
+): { friends: StudyFriend[]; error?: string; added?: StudyFriend } {
+  const raw = input.friendCodeOrEmail.trim();
+  if (!raw || raw.length < 3) {
+    return {
+      friends,
+      error: 'Enter a valid Friend Invite Code (e.g. LECTRA-LIAM-07) or friend email.',
+    };
+  }
+
+  const normalized = raw.toLowerCase();
+  const duplicate = friends.find(
+    (f) =>
+      f.friendCode.toLowerCase() === normalized ||
+      f.email.toLowerCase() === normalized
+  );
+  if (duplicate) {
+    return {
+      friends,
+      error: `${duplicate.displayName} is already connected in your Study Circle.`,
+    };
+  }
+
+  const isEmail = raw.includes('@');
+  const derivedName =
+    input.displayName?.trim() ||
+    (isEmail
+      ? raw
+          .split('@')[0]
+          .replace(/[._-]/g, ' ')
+          .replace(/\b\w/g, (l) => l.toUpperCase())
+      : raw
+          .replace(/^LECTRA-/i, '')
+          .replace(/-\d+$/, '')
+          .replace(/\b\w/g, (l) => l.toUpperCase()) || 'Study Partner');
+
+  const initials = derivedName
+    .split(' ')
+    .map((p) => p[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 2) || 'SP';
+
+  const category = input.topCategory || 'Computer Science';
+  const generatedCode = isEmail
+    ? `LECTRA-${derivedName.split(' ')[0].toUpperCase().slice(0, 6)}-${Math.floor(10 + (raw.length * 7) % 89)}`
+    : raw.toUpperCase();
+
+  const newFriend: StudyFriend = {
+    id: `friend-${Date.now()}`,
+    friendCode: generatedCode,
+    displayName: derivedName,
+    email: isEmail ? raw.toLowerCase() : `${derivedName.toLowerCase().replace(/\s+/g, '.')}@study.edu`,
+    avatarInitials: initials,
+    weeklyHours: 18.5,
+    streakDays: 7,
+    activeTopic: `Studying ${category} Problem Sets`,
+    topCategory: category,
+    status: 'Studying Now',
+    xpScore: 1190,
+  };
+
+  return {
+    friends: [newFriend, ...friends],
+    added: newFriend,
+  };
+}
+
+// --- Topic-Driven Study Game Generator (Built from Active Studying Topics) ---
+
+export interface StudyGameQuestion {
+  id: string;
+  category: StudyCategory;
+  sourceLabel: string;
+  topicTitle: string;
+  prompt: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+  xpReward: number;
+}
+
+export function generateStudyGameQuestions(
+  state: StudyTrekState,
+  categoryFilter: StudyCategory | 'All' = 'All'
+): StudyGameQuestion[] {
+  const questions: StudyGameQuestion[] = [];
+
+  // 1. Dynamically synthesize questions directly from the user's logged study sessions, journal takeaways, and checklist tasks
+  for (const entry of state.journal) {
+    if (categoryFilter !== 'All' && entry.category !== categoryFilter) continue;
+    questions.push({
+      id: `q-jrnl-${entry.id}`,
+      category: entry.category,
+      sourceLabel: `From Your Journey Log (${entry.date})`,
+      topicTitle: entry.title,
+      prompt: `While studying "${entry.title}" (${entry.category}), which key takeaway did you record for active recall?`,
+      options: [
+        entry.keyTakeaway,
+        'Skip local indexing and query unindexed remote documents on every frame render.',
+        'Ignore boundary conditions when solving non-linear differential systems.',
+        'Use mutable global singletons without scoping state by user authentication UID.',
+      ],
+      correctIndex: 0,
+      explanation: `Direct match from your ${entry.weekday} Journey reflection: "${entry.keyTakeaway}"`,
+      xpReward: 120,
+    });
+  }
+
+  for (const sess of state.sessions) {
+    if (categoryFilter !== 'All' && sess.category !== categoryFilter) continue;
+    const topicLower = sess.topic.toLowerCase();
+
+    if (topicLower.includes('eigenvalue') || topicLower.includes('svd') || topicLower.includes('matrix') || sess.category === 'Mathematics') {
+      questions.push({
+        id: `q-sess-${sess.id}`,
+        category: sess.category,
+        sourceLabel: `From Your ${sess.weekday} Study Session (${sess.hours}h)`,
+        topicTitle: sess.topic,
+        prompt: `Active Topic Recall — "${sess.topic}": For a real symmetric matrix A, what property holds for its eigenvalues and eigenvectors?`,
+        options: [
+          'All eigenvalues are real and eigenvectors of distinct eigenvalues are orthogonal',
+          'Eigenvalues are strictly imaginary unless the trace is zero',
+          'The determinant equals the sum of the diagonal entries',
+          'Symmetric matrices cannot be diagonalized over real numbers',
+        ],
+        correctIndex: 0,
+        explanation: `Spectral theorem mastery for your ${sess.hours}h session on "${sess.topic}".`,
+        xpReward: 100,
+      });
+    } else if (topicLower.includes('stream') || topicLower.includes('riverpod') || topicLower.includes('fl_chart') || sess.category === 'Computer Science') {
+      questions.push({
+        id: `q-sess-${sess.id}`,
+        category: sess.category,
+        sourceLabel: `From Your ${sess.weekday} Study Session (${sess.hours}h)`,
+        topicTitle: sess.topic,
+        prompt: `Active Topic Recall — "${sess.topic}": In Flutter reactive state & chart rendering, why do we scope local Hive boxes and Firestore queries by uid?`,
+        options: [
+          'To guarantee strict per-account data isolation and offline cache safety',
+          'To disable garbage collection on the main UI isolate',
+          'To force synchronous blocking network calls inside build()',
+          'To bypass Material 3 theme color seed generation',
+        ],
+        correctIndex: 0,
+        explanation: `Core concept from your ${sess.hours}h Computer Science session on "${sess.topic}".`,
+        xpReward: 100,
+      });
+    } else if (sess.category === 'Physics') {
+      questions.push({
+        id: `q-sess-${sess.id}`,
+        category: sess.category,
+        sourceLabel: `From Your ${sess.weekday} Study Session (${sess.hours}h)`,
+        topicTitle: sess.topic,
+        prompt: `Active Topic Recall — "${sess.topic}": According to Faraday's Law of Electromagnetic Induction, what induces an electromotive force (EMF) in a closed loop?`,
+        options: [
+          'A time-varying magnetic flux passing through the loop surface',
+          'A constant, uniform static electric field parallel to the wire',
+          'Zero net magnetic flux with stationary conductors',
+          'A purely gravitational potential gradient',
+        ],
+        correctIndex: 0,
+        explanation: `Reinforces your ${sess.hours}h Physics session on "${sess.topic}".`,
+        xpReward: 110,
+      });
+    } else if (sess.category === 'Systems Design') {
+      questions.push({
+        id: `q-sess-${sess.id}`,
+        category: sess.category,
+        sourceLabel: `From Your ${sess.weekday} Study Session (${sess.hours}h)`,
+        topicTitle: sess.topic,
+        prompt: `Active Topic Recall — "${sess.topic}": Why does an offline-first storage engine (like Hive or SQLite WAL) improve mobile study tracker reliability?`,
+        options: [
+          'Writes commit locally with zero network latency and sync asynchronously when online',
+          'It requires a persistent 5G connection before rendering any UI widget',
+          'It drops all local state whenever the app enters background mode',
+          'It stores unindexed plain text inside system clipboard memory',
+        ],
+        correctIndex: 0,
+        explanation: `Reinforces your ${sess.hours}h Systems Design session on "${sess.topic}".`,
+        xpReward: 110,
+      });
+    } else {
+      questions.push({
+        id: `q-sess-${sess.id}`,
+        category: sess.category,
+        sourceLabel: `From Your ${sess.weekday} Study Session (${sess.hours}h)`,
+        topicTitle: sess.topic,
+        prompt: `Active Topic Recall — "${sess.topic}": What is the primary benefit of structured open-source RFCs and clear CONTRIBUTING.md documentation?`,
+        options: [
+          'Enables contributors to align on architecture, security rules, and testing standards',
+          'Prevents external developers from running unit tests locally',
+          'Replaces version control with manual file transfers',
+          'Eliminates the need for semantic versioning',
+        ],
+        correctIndex: 0,
+        explanation: `Reinforces your ${sess.hours}h session on "${sess.topic}".`,
+        xpReward: 95,
+      });
+    }
+  }
+
+  for (const task of state.tasks.slice(0, 3)) {
+    if (categoryFilter !== 'All' && task.category !== categoryFilter) continue;
+    questions.push({
+      id: `q-task-${task.id}`,
+      category: task.category,
+      sourceLabel: `From Your Todo Checklist (${task.priority} Priority)`,
+      topicTitle: task.title,
+      prompt: `Checklist Mastery Check — You have "${task.title}" (${task.estimatedMinutes}m est) in ${task.category}. What is the best execution strategy?`,
+      options: [
+        `Break the ${task.estimatedMinutes}m task into focused deep-work blocks and verify with unit tests`,
+        'Context-switch every 3 minutes between unrelated subjects',
+        'Mark the task complete without verifying edge cases or proofs',
+        'Postpone high-priority tasks until after low-priority backlog items',
+      ],
+      correctIndex: 0,
+      explanation: `Linked directly to your ${task.category} checklist task due ${task.date}.`,
+      xpReward: 90,
+    });
+  }
+
+  return questions;
+}
+
 // --- Dynamic Flutter & Open-Source Code / Documentation Generators ---
 
 export function generateFlutterCodeArtifacts(state: StudyTrekState) {
@@ -557,10 +1155,16 @@ class LectraStudyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Lectra: Study Timer & Checklist',
       debugShowCheckedModeBanner: false,
+      themeMode: ${state.themePreference === 'dark' ? 'ThemeMode.dark' : 'ThemeMode.light'},
       theme: ThemeData(
         useMaterial3: true,
         colorSchemeSeed: Colors.blueAccent,
         brightness: Brightness.light,
+      ),
+      darkTheme: ThemeData(
+        useMaterial3: true,
+        colorSchemeSeed: Colors.blueAccent,
+        brightness: Brightness.dark,
       ),
       home: StreamBuilder<User?>(
         stream: FirebaseAuth.instance.authStateChanges(),
@@ -605,6 +1209,14 @@ ${mapEntries}
       appBar: AppBar(
         title: const Text('Lectra: Study Timer & Checklist'),
         actions: [
+          IconButton(
+            tooltip: 'Toggle Dark Theme',
+            icon: const Icon(Icons.dark_mode_outlined),
+            onPressed: () => AuthService.instance.updateThemePreference(
+              widget.user.uid,
+              '${state.themePreference === 'dark' ? 'light' : 'dark'}',
+            ),
+          ),
           IconButton(
             tooltip: 'Sign Out',
             icon: const Icon(Icons.logout),
@@ -696,10 +1308,19 @@ class AuthService {
         'ownerId': user.uid,
         'displayName': displayName ?? user.displayName ?? 'Student',
         'weeklyGoalHours': ${state.weeklyGoalHours},
+        'themePreference': '${state.themePreference}',
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
     }
+  }
+
+  /// Persist themePreference ('light' or 'dark') in Firestore /users/{uid}
+  Future<void> updateThemePreference(String uid, String themePreference) async {
+    await _db.collection('users').doc(uid).update({
+      'themePreference': themePreference,
+      'updatedAt': FieldValue.serverTimestamp(),
+    });
   }
 
   Future<void> signOut() async {
