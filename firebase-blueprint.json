@@ -1,0 +1,303 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Per-user study tracker preferences and weekly goal settings without storing PII.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The authenticated Firebase UID of the profile owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display label for the student workspace.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "weeklyGoalHours": {
+          "type": "number",
+          "description": "Weekly study target in hours (between 1 and 168)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "ownerId",
+        "displayName",
+        "weeklyGoalHours",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "StudyTask": {
+      "title": "StudyTask",
+      "description": "A subject checklist task belonging to an authenticated student.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The authenticated Firebase UID of the task owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Task description.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "category": {
+          "type": "string",
+          "description": "Academic subject category.",
+          "enum": [
+            "Computer Science",
+            "Mathematics",
+            "Physics",
+            "Literature",
+            "Languages",
+            "Systems Design"
+          ],
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "date": {
+          "type": "string",
+          "description": "Due date in YYYY-MM-DD format.",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "isCompleted": {
+          "type": "boolean",
+          "description": "Whether the study task has been completed."
+        },
+        "estimatedMinutes": {
+          "type": "number",
+          "description": "Estimated completion duration in minutes (1 to 480)."
+        },
+        "priority": {
+          "type": "string",
+          "description": "Priority level of the task.",
+          "enum": ["High", "Medium", "Low"],
+          "minLength": 3,
+          "maxLength": 10
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "ownerId",
+        "title",
+        "category",
+        "date",
+        "isCompleted",
+        "estimatedMinutes",
+        "priority",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "StudySession": {
+      "title": "StudySession",
+      "description": "A logged study duration entry mapped to a weekday and subject.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The authenticated Firebase UID of the session owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "weekday": {
+          "type": "string",
+          "description": "Day of week abbreviation.",
+          "enum": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+          "minLength": 3,
+          "maxLength": 3
+        },
+        "date": {
+          "type": "string",
+          "description": "Session date in YYYY-MM-DD format.",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "category": {
+          "type": "string",
+          "description": "Academic subject category.",
+          "enum": [
+            "Computer Science",
+            "Mathematics",
+            "Physics",
+            "Literature",
+            "Languages",
+            "Systems Design"
+          ],
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "hours": {
+          "type": "number",
+          "description": "Hours completed in the session (0.1 to 16)."
+        },
+        "topic": {
+          "type": "string",
+          "description": "Milestone or topic studied.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "ownerId",
+        "weekday",
+        "date",
+        "category",
+        "hours",
+        "topic",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "JournalEntry": {
+      "title": "JournalEntry",
+      "description": "A daily study reflection log entry owned by an authenticated student.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "The authenticated Firebase UID of the journal entry owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Session title or concept studied.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "category": {
+          "type": "string",
+          "description": "Academic subject category.",
+          "enum": [
+            "Computer Science",
+            "Mathematics",
+            "Physics",
+            "Literature",
+            "Languages",
+            "Systems Design"
+          ],
+          "minLength": 1,
+          "maxLength": 40
+        },
+        "date": {
+          "type": "string",
+          "description": "Entry date in YYYY-MM-DD format.",
+          "minLength": 10,
+          "maxLength": 10,
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+        },
+        "weekday": {
+          "type": "string",
+          "description": "Day of week abbreviation.",
+          "enum": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+          "minLength": 3,
+          "maxLength": 3
+        },
+        "hoursLogged": {
+          "type": "number",
+          "description": "Hours logged for this study entry (0.1 to 16)."
+        },
+        "focusRating": {
+          "type": "number",
+          "description": "Self-reported focus rating from 1 to 5."
+        },
+        "reflection": {
+          "type": "string",
+          "description": "Detailed study reflection notes.",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "keyTakeaway": {
+          "type": "string",
+          "description": "Core 1-sentence active recall takeaway.",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": [
+        "ownerId",
+        "title",
+        "category",
+        "date",
+        "weekday",
+        "hoursLogged",
+        "focusRating",
+        "reflection",
+        "keyTakeaway",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores per-user study workspace configuration and weekly goal hours."
+    },
+    "/tasks/{taskId}": {
+      "schema": { "$ref": "#/entities/StudyTask" },
+      "description": "Stores user-specific subject todo checklist items."
+    },
+    "/sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/StudySession" },
+      "description": "Stores user-specific logged study sessions for the weekly progress graph."
+    },
+    "/journalEntries/{entryId}": {
+      "schema": { "$ref": "#/entities/JournalEntry" },
+      "description": "Stores user-specific daily study reflection logs."
+    }
+  }
+}

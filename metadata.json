@@ -1,0 +1,6 @@
+{
+  "name": "Study Trek — Open-Source Study Progress Tracker",
+  "description": "Offline-first study progress tracker featuring weekly area graphs, daily study journey logs, subject todo checklists, and a Flutter & Play Store open-source toolkit.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

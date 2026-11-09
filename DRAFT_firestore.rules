@@ -1,0 +1,328 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 4.1: Global Safety Net (Default-Deny Catch-All)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Phase 3: Reusable Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isValidCategory(cat) {
+      return cat is string &&
+        cat.size() >= 1 &&
+        cat.size() <= 40 &&
+        cat in [
+          'Computer Science',
+          'Mathematics',
+          'Physics',
+          'Literature',
+          'Languages',
+          'Systems Design'
+        ];
+    }
+
+    function isValidWeekday(day) {
+      return day is string &&
+        day.size() == 3 &&
+        day in ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    }
+
+    function isValidDateString(d) {
+      return d is string &&
+        d.size() == 10 &&
+        d.matches('^\\d{4}-\\d{2}-\\d{2}$');
+    }
+
+    // Validation Blueprint: UserProfile
+    function isValidUserProfile(data) {
+      return isVerifiedUser() &&
+        data.keys().hasAll(['ownerId', 'displayName', 'weeklyGoalHours', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'displayName', 'weeklyGoalHours', 'createdAt', 'updatedAt']) &&
+        data.ownerId is string &&
+        data.ownerId.size() >= 1 &&
+        data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.displayName is string &&
+        data.displayName.size() >= 1 &&
+        data.displayName.size() <= 100 &&
+        data.weeklyGoalHours is number &&
+        data.weeklyGoalHours >= 1 &&
+        data.weeklyGoalHours <= 168 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: StudyTask
+    function isValidStudyTask(data) {
+      return isVerifiedUser() &&
+        data.keys().hasAll([
+          'ownerId',
+          'title',
+          'category',
+          'date',
+          'isCompleted',
+          'estimatedMinutes',
+          'priority',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId',
+          'title',
+          'category',
+          'date',
+          'isCompleted',
+          'estimatedMinutes',
+          'priority',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.ownerId is string &&
+        data.ownerId.size() >= 1 &&
+        data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.title is string &&
+        data.title.size() >= 1 &&
+        data.title.size() <= 200 &&
+        isValidCategory(data.category) &&
+        isValidDateString(data.date) &&
+        data.isCompleted is bool &&
+        data.estimatedMinutes is number &&
+        data.estimatedMinutes >= 1 &&
+        data.estimatedMinutes <= 480 &&
+        data.priority is string &&
+        data.priority.size() >= 3 &&
+        data.priority.size() <= 10 &&
+        data.priority in ['High', 'Medium', 'Low'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: StudySession
+    function isValidStudySession(data) {
+      return isVerifiedUser() &&
+        data.keys().hasAll([
+          'ownerId',
+          'weekday',
+          'date',
+          'category',
+          'hours',
+          'topic',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId',
+          'weekday',
+          'date',
+          'category',
+          'hours',
+          'topic',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.ownerId is string &&
+        data.ownerId.size() >= 1 &&
+        data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        isValidWeekday(data.weekday) &&
+        isValidDateString(data.date) &&
+        isValidCategory(data.category) &&
+        data.hours is number &&
+        data.hours >= 0.1 &&
+        data.hours <= 16 &&
+        data.topic is string &&
+        data.topic.size() >= 1 &&
+        data.topic.size() <= 200 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Validation Blueprint: JournalEntry
+    function isValidJournalEntry(data) {
+      return isVerifiedUser() &&
+        data.keys().hasAll([
+          'ownerId',
+          'title',
+          'category',
+          'date',
+          'weekday',
+          'hoursLogged',
+          'focusRating',
+          'reflection',
+          'keyTakeaway',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'ownerId',
+          'title',
+          'category',
+          'date',
+          'weekday',
+          'hoursLogged',
+          'focusRating',
+          'reflection',
+          'keyTakeaway',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.ownerId is string &&
+        data.ownerId.size() >= 1 &&
+        data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.title is string &&
+        data.title.size() >= 1 &&
+        data.title.size() <= 200 &&
+        isValidCategory(data.category) &&
+        isValidDateString(data.date) &&
+        isValidWeekday(data.weekday) &&
+        data.hoursLogged is number &&
+        data.hoursLogged >= 0.1 &&
+        data.hoursLogged <= 16 &&
+        data.focusRating is number &&
+        data.focusRating >= 1 &&
+        data.focusRating <= 5 &&
+        data.reflection is string &&
+        data.reflection.size() >= 1 &&
+        data.reflection.size() <= 2000 &&
+        data.keyTakeaway is string &&
+        data.keyTakeaway.size() >= 1 &&
+        data.keyTakeaway.size() <= 500 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function userProfileExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // Collection 1: /users/{userId}
+    match /users/{userId} {
+      allow get: if isVerifiedUser() && isValidId(userId) && existing().ownerId == request.auth.uid;
+      allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        userId == request.auth.uid &&
+        isValidUserProfile(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if (
+        isValidUserProfile(incoming()) &&
+        isValidId(userId) &&
+        userId == request.auth.uid &&
+        existing().ownerId == request.auth.uid &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Action: UpdateWeeklyGoal
+          (incoming().diff(existing()).affectedKeys().hasOnly(['weeklyGoalHours', 'updatedAt'])) ||
+          // Action: UpdateProfileDisplayName
+          (incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'weeklyGoalHours', 'updatedAt']))
+        )
+      );
+      allow delete: if isVerifiedUser() && isValidId(userId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection 2: /tasks/{taskId}
+    match /tasks/{taskId} {
+      allow get: if isVerifiedUser() && isValidId(taskId) && existing().ownerId == request.auth.uid;
+      allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      allow create: if isVerifiedUser() &&
+        isValidId(taskId) &&
+        isValidStudyTask(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        userProfileExists();
+      allow update: if (
+        isValidStudyTask(incoming()) &&
+        isValidId(taskId) &&
+        existing().ownerId == request.auth.uid &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        userProfileExists() && (
+          // Action: ToggleTaskCompletion
+          (incoming().diff(existing()).affectedKeys().hasOnly(['isCompleted', 'updatedAt'])) ||
+          // Action: UpdateTaskDetails
+          (incoming().diff(existing()).affectedKeys().hasOnly(['title', 'category', 'date', 'estimatedMinutes', 'priority', 'updatedAt']))
+        )
+      );
+      allow delete: if isVerifiedUser() && isValidId(taskId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection 3: /sessions/{sessionId}
+    match /sessions/{sessionId} {
+      allow get: if isVerifiedUser() && isValidId(sessionId) && existing().ownerId == request.auth.uid;
+      allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      allow create: if isVerifiedUser() &&
+        isValidId(sessionId) &&
+        isValidStudySession(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        userProfileExists();
+      allow update: if (
+        isValidStudySession(incoming()) &&
+        isValidId(sessionId) &&
+        existing().ownerId == request.auth.uid &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        userProfileExists() && (
+          // Action: UpdateSessionDetails
+          (incoming().diff(existing()).affectedKeys().hasOnly(['hours', 'topic', 'category', 'weekday', 'date', 'updatedAt']))
+        )
+      );
+      allow delete: if isVerifiedUser() && isValidId(sessionId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection 4: /journalEntries/{entryId}
+    match /journalEntries/{entryId} {
+      allow get: if isVerifiedUser() && isValidId(entryId) && existing().ownerId == request.auth.uid;
+      allow list: if isVerifiedUser() && existing().ownerId == request.auth.uid;
+      allow create: if isVerifiedUser() &&
+        isValidId(entryId) &&
+        isValidJournalEntry(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        userProfileExists();
+      allow update: if (
+        isValidJournalEntry(incoming()) &&
+        isValidId(entryId) &&
+        existing().ownerId == request.auth.uid &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        userProfileExists() && (
+          // Action: UpdateJournalEntryContent
+          (incoming().diff(existing()).affectedKeys().hasOnly(['title', 'reflection', 'keyTakeaway', 'focusRating', 'hoursLogged', 'updatedAt']))
+        )
+      );
+      allow delete: if isVerifiedUser() && isValidId(entryId) && existing().ownerId == request.auth.uid;
+    }
+  }
+}
