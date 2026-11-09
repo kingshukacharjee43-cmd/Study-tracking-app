@@ -1,14 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   StudyTrekState,
   STUDY_CATEGORIES,
   StudyCategory,
   WEEKDAYS,
   Weekday,
+  GOOGLE_STUDENT_TRENDING_TOPICS,
+  GoogleTrendingStudyTopic,
   calculateStudyMetrics,
 } from '../utils/studyEngine';
 import { StudyAreaChart } from './StudyAreaChart';
-import { Play, Pause, RotateCcw, Plus, Trash2, CheckCircle2 } from 'lucide-react';
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  Plus,
+  Trash2,
+  CheckCircle2,
+  Shield,
+  Sparkles,
+  TrendingUp,
+  Cpu,
+} from 'lucide-react';
 
 interface HomeViewProps {
   state: StudyTrekState;
@@ -19,20 +32,40 @@ interface HomeViewProps {
     topic: string;
   }) => string | undefined;
   onDeleteSession: (id: string) => void;
+  onResetSessions: (mode: 'restore_defaults' | 'clear_all') => void;
   onUpdateWeeklyGoal: (goalHours: number) => void;
   onNavigateTab: (tab: 'home' | 'journey' | 'todos' | 'game' | 'flutter') => void;
+  onEnterFocusMode: (config?: {
+    durationMinutes?: number;
+    category?: StudyCategory;
+    taskTitle?: string;
+  }) => void;
+  onOpenAiModal: (tab: 'chat' | 'optimizer') => void;
+  onAddTask: (input: {
+    title: string;
+    category: StudyCategory;
+    date: string;
+    estimatedMinutes: number;
+    priority: 'High' | 'Medium' | 'Low';
+  }) => string | undefined;
 }
 
 export const HomeView: React.FC<HomeViewProps> = ({
   state,
   onAddSession,
   onDeleteSession,
+  onResetSessions,
   onUpdateWeeklyGoal,
   onNavigateTab,
+  onEnterFocusMode,
+  onOpenAiModal,
+  onAddTask,
 }) => {
-  const metrics = calculateStudyMetrics(state);
+  const metrics = useMemo(() => calculateStudyMetrics(state), [state]);
   const [selectedDay, setSelectedDay] = useState<Weekday | null>(null);
   const [chartType, setChartType] = useState<'area' | 'bar'>('area');
+  const [trendingCategoryFilter, setTrendingCategoryFilter] = useState<StudyCategory | 'All'>('All');
+  const [trendingFeedback, setTrendingFeedback] = useState<string | null>(null);
 
   // Inline Quick Session Form
   const [weekday, setWeekday] = useState<Weekday>('Mon');
@@ -100,6 +133,32 @@ export const HomeView: React.FC<HomeViewProps> = ({
     setFormSuccess(`Logged ${hours.toFixed(1)}h focus block to ${targetDay}.`);
   };
 
+  const handleAddTrendingToTodos = (item: GoogleTrendingStudyTopic) => {
+    const err = onAddTask({
+      title: `${item.topicTitle} (${item.sourceTitle})`,
+      category: item.category,
+      date: '2026-11-12',
+      estimatedMinutes: item.estimatedMinutes,
+      priority: item.priority,
+    });
+    if (!err) {
+      setTrendingFeedback(`Added "${item.topicTitle}" (${item.estimatedMinutes}m) to Todo Checklist.`);
+    }
+  };
+
+  const handleLogTrendingSession = (item: GoogleTrendingStudyTopic) => {
+    const hours = Math.max(0.5, Math.round((item.estimatedMinutes / 60) * 10) / 10);
+    const err = onAddSession({
+      weekday: selectedDay || 'Thu',
+      category: item.category,
+      hours,
+      topic: item.topicTitle,
+    });
+    if (!err) {
+      setTrendingFeedback(`Logged ${hours.toFixed(1)}h study block for "${item.topicTitle}".`);
+    }
+  };
+
   const formatTimer = (totalSec: number) => {
     const mins = Math.floor(totalSec / 60);
     const secs = totalSec % 60;
@@ -109,6 +168,14 @@ export const HomeView: React.FC<HomeViewProps> = ({
   const filteredSessions = selectedDay
     ? state.sessions.filter((s) => s.weekday === selectedDay)
     : state.sessions;
+
+  const filteredTrendingTopics = useMemo(
+    () =>
+      trendingCategoryFilter === 'All'
+        ? GOOGLE_STUDENT_TRENDING_TOPICS
+        : GOOGLE_STUDENT_TRENDING_TOPICS.filter((t) => t.category === trendingCategoryFilter),
+    [trendingCategoryFilter]
+  );
 
   const dailyTarget = Math.round((state.weeklyGoalHours / 7) * 10) / 10;
 
@@ -200,7 +267,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
       {/* Main 12-Column Workspace Split */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left 8 Columns: Weekly Area Chart + Quick Study Session Logger + Sessions Table */}
+        {/* Left 8 Columns: Weekly Area Chart + Quick Study Session Logger + Google Trending Topics + Sessions Table */}
         <div className="lg:col-span-8 space-y-6">
           {/* Weekly Progress Graph Card */}
           <section
@@ -263,6 +330,127 @@ export const HomeView: React.FC<HomeViewProps> = ({
                 }
                 chartType={chartType}
               />
+            </div>
+          </section>
+
+          {/* Google Search Trending Student Study Topics Section */}
+          <section
+            aria-labelledby="google-trending-heading"
+            data-testid="google-trending-topics-section"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6"
+          >
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <div className="flex items-center gap-2">
+                  <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <h3
+                    id="google-trending-heading"
+                    className="text-base font-bold text-slate-900 dark:text-slate-100"
+                  >
+                    Google Trending Student Study Topics (What Students Search For)
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  High-demand academic topics from Google Search Trends & university exam indices — add directly to Todos, Focus Mode, or Graph
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                <select
+                  aria-label="Filter Google trending student topics by subject"
+                  value={trendingCategoryFilter}
+                  onChange={(e) =>
+                    setTrendingCategoryFilter(e.target.value as StudyCategory | 'All')
+                  }
+                  className="min-h-[36px] px-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
+                >
+                  <option value="All">All Subjects ({GOOGLE_STUDENT_TRENDING_TOPICS.length})</option>
+                  {STUDY_CATEGORIES.map((cat) => (
+                    <option key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {trendingFeedback && (
+              <div
+                role="status"
+                className="mt-3 px-3 py-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800/70 text-xs font-medium text-emerald-800 dark:text-emerald-300 flex items-center justify-between gap-2"
+              >
+                <span className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <span>{trendingFeedback}</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setTrendingFeedback(null)}
+                  className="text-[11px] underline whitespace-nowrap"
+                >
+                  Dismiss
+                </button>
+              </div>
+            )}
+
+            <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+              {filteredTrendingTopics.map((item) => (
+                <div
+                  key={item.id}
+                  className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 flex flex-col justify-between gap-3"
+                >
+                  <div>
+                    <div className="flex items-center justify-between gap-2 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                      <span className="text-blue-600 dark:text-blue-400 font-semibold">
+                        {item.category}
+                      </span>
+                      <span className="font-mono tabular-nums text-emerald-700 dark:text-emerald-400">
+                        {item.monthlySearchSignal}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-1">
+                      {item.topicTitle}
+                    </h4>
+                    <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
+                      {item.whyStudentsSearchIt}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1.5 font-mono">
+                      Source: {item.sourceTitle} · {item.estimatedMinutes}m block
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-200/70 dark:border-slate-700/60">
+                    <button
+                      type="button"
+                      onClick={() => handleAddTrendingToTodos(item)}
+                      data-testid={`add-trending-todo-${item.id}`}
+                      className="min-h-[34px] px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold rounded-lg transition-colors whitespace-nowrap shrink-0"
+                    >
+                      + Add to Checklist
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleLogTrendingSession(item)}
+                      className="min-h-[34px] px-2.5 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-[11px] font-medium rounded-lg transition-colors whitespace-nowrap shrink-0"
+                    >
+                      + Log Hours
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        onEnterFocusMode({
+                          durationMinutes: item.estimatedMinutes >= 60 ? 60 : 45,
+                          category: item.category,
+                          taskTitle: item.topicTitle,
+                        })
+                      }
+                      className="min-h-[34px] px-2.5 py-1 bg-slate-900 dark:bg-slate-700 hover:bg-slate-800 text-white text-[11px] font-medium rounded-lg transition-colors whitespace-nowrap shrink-0"
+                    >
+                      Focus Mode
+                    </button>
+                  </div>
+                </div>
+              ))}
             </div>
           </section>
 
@@ -380,7 +568,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
 
               <div className="flex items-center justify-between pt-1">
                 <span className="text-xs text-slate-500 dark:text-slate-400">
-                  Persisted locally in offline storage
+                  Persisted locally & synced with active account
                 </span>
                 <button
                   type="submit"
@@ -412,21 +600,31 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   Showing {filteredSessions.length} session{filteredSessions.length === 1 ? '' : 's'}
                 </p>
               </div>
-              {selectedDay && (
+              <div className="flex flex-wrap items-center gap-2">
+                {selectedDay && (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDay(null)}
+                    className="min-h-[36px] px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
+                  >
+                    Show All Days
+                  </button>
+                )}
                 <button
                   type="button"
-                  onClick={() => setSelectedDay(null)}
-                  className="min-h-[36px] px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors whitespace-nowrap shrink-0"
+                  onClick={() => onResetSessions('restore_defaults')}
+                  className="min-h-[36px] px-3 py-1.5 text-xs font-medium text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
                 >
-                  Show All Days
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Sessions</span>
                 </button>
-              )}
+              </div>
             </div>
 
             {filteredSessions.length === 0 ? (
               <div className="py-8 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-lg">
                 <p className="text-sm text-slate-600 dark:text-slate-400">
-                  No study sessions logged for {selectedDay} yet.
+                  No study sessions logged {selectedDay ? `for ${selectedDay}` : ''} yet.
                 </p>
                 <button
                   type="button"
@@ -436,7 +634,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
                   }}
                   className="mt-3 min-h-[40px] px-4 py-2 text-xs font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 underline underline-offset-2"
                 >
-                  Log First Session for {selectedDay}
+                  Log First Session
                 </button>
               </div>
             ) : (
@@ -478,7 +676,7 @@ export const HomeView: React.FC<HomeViewProps> = ({
           </section>
         </div>
 
-        {/* Right 4 Columns: Focus Study Timer + Subject Distribution + Weekly Goal Config */}
+        {/* Right 4 Columns: Focus Study Timer + AI Multi-Model Optimizer + Subject Distribution + Weekly Goal Config */}
         <div className="lg:col-span-4 space-y-6">
           {/* Focus Timer Card */}
           <section
@@ -595,6 +793,60 @@ export const HomeView: React.FC<HomeViewProps> = ({
             >
               Complete & Log Block to Graph
             </button>
+
+            {/* Full-Screen Distraction-Blocking Focus Mode Trigger */}
+            <button
+              type="button"
+              onClick={() =>
+                onEnterFocusMode({
+                  durationMinutes: timerPresetMinutes,
+                  category: timerCategory,
+                })
+              }
+              data-testid="enter-focus-mode-btn"
+              className="w-full mt-2.5 min-h-[44px] px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-2 whitespace-nowrap"
+            >
+              <Shield className="w-4 h-4 shrink-0" />
+              <span>Enter Focus Mode (Block All UI)</span>
+            </button>
+          </section>
+
+          {/* Multi-Model AI App & Study Optimizer Card */}
+          <section
+            aria-labelledby="ai-optimizer-card-heading"
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+              <h3
+                id="ai-optimizer-card-heading"
+                className="text-base font-semibold text-slate-900 dark:text-slate-100"
+              >
+                Multi-Model AI Study Optimizer
+              </h3>
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Route study coaching & schedule diagnostics across Gemini Flash-Lite (fast triage), Gemini 3 Flash (schedule planning), and Gemini 3.1 Pro (deep STEM reasoning).
+            </p>
+            <div className="grid grid-cols-2 gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => onOpenAiModal('optimizer')}
+                data-testid="home-open-optimizer-btn"
+                className="min-h-[40px] px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+              >
+                <Cpu className="w-3.5 h-3.5" />
+                <span>Optimize App</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenAiModal('chat')}
+                className="min-h-[40px] px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5 whitespace-nowrap"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span>AI Mentor Chat</span>
+              </button>
+            </div>
           </section>
 
           {/* Subject Distribution Breakdown */}

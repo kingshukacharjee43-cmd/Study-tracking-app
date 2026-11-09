@@ -109,9 +109,10 @@ testConnection();
 export interface AuthenticatedAccount {
   uid: string;
   email: string | null;
+  phoneNumber?: string | null;
   displayName: string;
   emailVerified: boolean;
-  provider: 'google' | 'password' | 'local-account';
+  provider: 'google' | 'password' | 'phone' | 'local-account';
   isCloudSynced: boolean;
 }
 
@@ -168,6 +169,91 @@ export function saveUserLocalState(uid: string, state: StudyTrekState): void {
   } catch {
     // ignore storage quota errors
   }
+}
+
+export interface MultiUserStorageSummaryItem {
+  uid: string;
+  displayName: string;
+  emailOrPhone: string;
+  provider: AuthenticatedAccount['provider'];
+  tasksCount: number;
+  completedTasksCount: number;
+  sessionsCount: number;
+  totalStudyHours: number;
+  journalCount: number;
+  gameXp: number;
+}
+
+const ACCOUNTS_REGISTRY_KEY = 'lectra_registered_accounts_v1';
+
+export function registerSavedAccount(account: AuthenticatedAccount): AuthenticatedAccount[] {
+  try {
+    const raw = localStorage.getItem(ACCOUNTS_REGISTRY_KEY);
+    const list: AuthenticatedAccount[] = raw ? JSON.parse(raw) : [];
+    const filtered = list.filter((a) => a.uid !== account.uid);
+    const updated = [account, ...filtered].slice(0, 25);
+    localStorage.setItem(ACCOUNTS_REGISTRY_KEY, JSON.stringify(updated));
+    return updated;
+  } catch {
+    return [account];
+  }
+}
+
+export function getMultiUserStorageOverview(
+  fallbackAccounts: AuthenticatedAccount[]
+): {
+  users: MultiUserStorageSummaryItem[];
+  totalUsersCount: number;
+  totalTasksAcrossUsers: number;
+  totalSessionsAcrossUsers: number;
+  totalHoursAcrossUsers: number;
+} {
+  const map = new Map<string, AuthenticatedAccount>();
+  for (const acct of fallbackAccounts) {
+    map.set(acct.uid, acct);
+  }
+  try {
+    const raw = localStorage.getItem(ACCOUNTS_REGISTRY_KEY);
+    if (raw) {
+      const saved: AuthenticatedAccount[] = JSON.parse(raw);
+      for (const acct of saved) {
+        if (acct && acct.uid) {
+          map.set(acct.uid, acct);
+        }
+      }
+    }
+  } catch {
+    // ignore
+  }
+
+  const users: MultiUserStorageSummaryItem[] = Array.from(map.values()).map((acct) => {
+    const state = loadUserLocalState(acct.uid);
+    const totalStudyHours =
+      Math.round(
+        state.sessions.reduce((sum, s) => sum + (Number(s.hours) || 0), 0) * 10
+      ) / 10;
+    return {
+      uid: acct.uid,
+      displayName: acct.displayName,
+      emailOrPhone: acct.phoneNumber || acct.email || acct.uid,
+      provider: acct.provider,
+      tasksCount: state.tasks.length,
+      completedTasksCount: state.tasks.filter((t) => t.isCompleted).length,
+      sessionsCount: state.sessions.length,
+      totalStudyHours,
+      journalCount: state.journal.length,
+      gameXp: state.gameXp ?? 1320,
+    };
+  });
+
+  return {
+    users,
+    totalUsersCount: users.length,
+    totalTasksAcrossUsers: users.reduce((s, u) => s + u.tasksCount, 0),
+    totalSessionsAcrossUsers: users.reduce((s, u) => s + u.sessionsCount, 0),
+    totalHoursAcrossUsers:
+      Math.round(users.reduce((s, u) => s + u.totalStudyHours, 0) * 10) / 10,
+  };
 }
 
 // Ensure /users/{uid} exists in Firestore for verified Firebase users

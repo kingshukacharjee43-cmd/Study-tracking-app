@@ -19,9 +19,12 @@ import {
   connectStudyFriend,
   generateStudyGameQuestions,
   generateFlutterCodeArtifacts,
+  resetStudyTasks,
+  validateMobileSignInInput,
+  GOOGLE_STUDENT_TRENDING_TOPICS,
 } from './studyEngine';
 
-test('StudyTask engine: add, toggle, read, and delete methods work deterministically with ownerId', () => {
+test('StudyTask engine: add, toggle, read, delete, and resetStudyTasks work deterministically with ownerId', () => {
   const initialTasks = INITIAL_STUDY_STATE.tasks;
 
   const invalidAdd = addStudyTask(initialTasks, {
@@ -57,8 +60,42 @@ test('StudyTask engine: add, toggle, read, and delete methods work deterministic
   });
   assert.ok(mathCompleted.some((t) => t.id === addedId));
 
+  // Verify resetStudyTasks ('uncheck' mode unchecks all completed tasks)
+  const uncheckedAll = resetStudyTasks(toggled, 'uncheck', 'user_test_1');
+  assert.equal(uncheckedAll.every((t) => !t.isCompleted), true);
+  assert.equal(uncheckedAll.length, toggled.length);
+
   const afterDelete = deleteStudyTask(toggled, addedId);
   assert.equal(afterDelete.length, initialTasks.length);
+
+  // Verify resetStudyTasks ('restore_defaults' mode restores default tasks with ownerId)
+  const restored = resetStudyTasks([], 'restore_defaults', 'user_test_1');
+  assert.equal(restored.length, INITIAL_STUDY_STATE.tasks.length);
+  assert.equal(restored.every((t) => !t.isCompleted && t.ownerId === 'user_test_1'), true);
+});
+
+test('Post-download Mobile Number sign-in validation works accurately', () => {
+  const badPhone = validateMobileSignInInput({
+    phoneNumber: '12345',
+    otpCode: '482910',
+  });
+  assert.ok(badPhone.error);
+
+  const badOtp = validateMobileSignInInput({
+    phoneNumber: '+1 650-555-0199',
+    otpCode: '12',
+  });
+  assert.ok(badOtp.error);
+
+  const validMobile = validateMobileSignInInput({
+    phoneNumber: '+1 (650) 555-0199',
+    otpCode: '482910',
+    displayName: 'Rohan Sharma',
+  });
+  assert.equal(validMobile.error, undefined);
+  assert.equal(validMobile.uid, 'mobile-16505550199');
+  assert.equal(validMobile.normalizedPhone, '+16505550199');
+  assert.equal(validMobile.displayName, 'Rohan Sharma');
 });
 
 test('Weekly study hours graph aggregation maps Mon-Sun accurately', () => {
@@ -134,8 +171,10 @@ test('Digital Wellbeing stats, Daily/Weekly/Monthly Achievements, Widgets, Frien
   assert.equal(friendAdd.added?.displayName, 'Liam Chen');
 
   const questions = generateStudyGameQuestions(INITIAL_STUDY_STATE, 'All');
-  assert.ok(questions.length >= 6);
+  assert.ok(questions.length >= 14);
   assert.ok(questions.some((q) => q.topicTitle.includes('Firebase Auth')));
+  assert.ok(questions.some((q) => q.id.startsWith('q-gtrend-')));
+  assert.equal(GOOGLE_STUDENT_TRENDING_TOPICS.length, 8);
 });
 
 test('Lectra branding, Play Store ASO candidates, themePreference, and Flutter Firebase Auth generator', () => {
@@ -145,10 +184,12 @@ test('Lectra branding, Play Store ASO candidates, themePreference, and Flutter F
   assert.ok(artifacts.mainDart.includes('Lectra: Study Timer & Checklist'));
   assert.ok(artifacts.mainDart.includes('ThemeMode.dark'));
   assert.ok(artifacts.firebaseAuthDart.includes('signInWithGoogle'));
+  assert.ok(artifacts.firebaseAuthDart.includes('verifyMobileNumber'));
   assert.ok(artifacts.firebaseAuthDart.includes('updateThemePreference'));
   assert.ok(artifacts.firebaseAuthDart.includes('createUserWithEmailAndPassword'));
   assert.ok(artifacts.hiveTaskEngineDart.includes('class StudyTaskManager'));
   assert.ok(artifacts.flChartWidgetDart.includes('LineChartBarData'));
   assert.ok(artifacts.playStoreAso.includes('Lectra: Study Timer & Checklist'));
+  assert.equal(PLAY_STORE_NAME_CANDIDATES.length, 10);
   assert.ok(PLAY_STORE_NAME_CANDIDATES.some((c) => c.title === 'Lectra: Study Timer & Checklist'));
 });

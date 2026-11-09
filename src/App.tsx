@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   StudyTrekState,
   StudyCategory,
@@ -12,8 +12,14 @@ import {
   addStudyTask,
   toggleStudyTask,
   deleteStudyTask,
+  resetStudyTasks,
   addStudySession,
   addJournalEntry,
+  INITIAL_STUDY_STATE,
+  toggleDeviceWidget,
+  connectStudyFriend,
+  DEFAULT_DEVICE_WIDGETS,
+  DEFAULT_STUDY_FRIENDS,
 } from './utils/studyEngine';
 import {
   auth,
@@ -21,6 +27,8 @@ import {
   onAuthStateChanged,
   loadUserLocalState,
   saveUserLocalState,
+  registerSavedAccount,
+  getMultiUserStorageOverview,
   ensureFirestoreUserProfile,
   subscribeToUserFirestoreData,
   syncCreateTaskToFirestore,
@@ -37,6 +45,8 @@ import { JourneyView } from './components/JourneyView';
 import { TodoView } from './components/TodoView';
 import { StudyGameView } from './components/StudyGameView';
 import { FlutterReleaseView } from './components/FlutterReleaseView';
+import { FocusModeView } from './components/FocusModeView';
+import { StudyChatbotModal } from './components/StudyChatbotModal';
 import { AuthModal } from './components/AuthModal';
 import { LogSessionModal } from './components/LogSessionModal';
 import {
@@ -50,13 +60,11 @@ import {
   RotateCcw,
   Moon,
   Sun,
+  Shield,
+  Sparkles,
+  Database,
+  Smartphone,
 } from 'lucide-react';
-import {
-  toggleDeviceWidget,
-  connectStudyFriend,
-  DEFAULT_DEVICE_WIDGETS,
-  DEFAULT_STUDY_FRIENDS,
-} from './utils/studyEngine';
 
 type ActiveTab = 'home' | 'journey' | 'todos' | 'game' | 'flutter';
 
@@ -181,6 +189,19 @@ export default function App() {
   );
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isLogModalOpen, setIsLogModalOpen] = useState<boolean>(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState<boolean>(false);
+  const [aiModalInitialTab, setAiModalInitialTab] = useState<'chat' | 'optimizer'>('chat');
+
+  // Distraction-blocking Focus Mode state
+  const [isFocusModeActive, setIsFocusModeActive] = useState<boolean>(false);
+  const [focusModeConfig, setFocusModeConfig] = useState<{
+    durationMinutes: number;
+    category: StudyCategory;
+    taskTitle?: string;
+  }>({
+    durationMinutes: 25,
+    category: 'Computer Science',
+  });
 
   // Sync the active user's themePreference with the root <html> element for Tailwind dark:* variants
   useEffect(() => {
@@ -216,6 +237,7 @@ export default function App() {
           provider,
           isCloudSynced: firebaseUser.emailVerified,
         };
+        registerSavedAccount(acct);
         setCurrentAccount(acct);
         localStorage.setItem('lectra_active_account_v1', JSON.stringify(acct));
         setStudyState(loadUserLocalState(firebaseUser.uid));
@@ -250,6 +272,7 @@ export default function App() {
 
   // Load isolated workspace data whenever currentAccount.uid changes
   const handleSelectAccount = (account: AuthenticatedAccount) => {
+    registerSavedAccount(account);
     setCurrentAccount(account);
     try {
       localStorage.setItem('lectra_active_account_v1', JSON.stringify(account));
@@ -261,8 +284,20 @@ export default function App() {
 
   // Persist changes to the current authenticated user's isolated local store
   useEffect(() => {
+    registerSavedAccount(currentAccount);
     saveUserLocalState(currentAccount.uid, studyState);
-  }, [currentAccount.uid, studyState]);
+  }, [currentAccount, studyState]);
+
+  // Multi-user saved data overview (memoized for high efficiency across all saved accounts)
+  const multiUserStorageOverview = useMemo(() => {
+    const combinedAccounts = [
+      ...PRESET_STUDENT_ACCOUNTS,
+      ...(PRESET_STUDENT_ACCOUNTS.some((a) => a.uid === currentAccount.uid)
+        ? []
+        : [currentAccount]),
+    ];
+    return getMultiUserStorageOverview(combinedAccounts);
+  }, [currentAccount, studyState]);
 
   // Toggle dark/light theme and persist to Firestore user profile + isolated account store
   const handleToggleTheme = () => {
@@ -310,6 +345,15 @@ export default function App() {
     }));
   };
 
+  // Reset Game Stats in Study Game
+  const handleResetGameStats = (mode: 'reset_zero' | 'restore_default') => {
+    setStudyState((prev) => ({
+      ...prev,
+      gameXp: mode === 'reset_zero' ? 0 : 1320,
+      friends: DEFAULT_STUDY_FRIENDS,
+    }));
+  };
+
   // Handlers for Sessions
   const handleAddSession = (input: {
     weekday: Weekday;
@@ -337,6 +381,17 @@ export default function App() {
     if (currentAccount.isCloudSynced) {
       syncDeleteDocFromFirestore(currentAccount.uid, 'sessions', id).catch(console.error);
     }
+  };
+
+  const handleResetSessions = (mode: 'restore_defaults' | 'clear_all') => {
+    const defaults = INITIAL_STUDY_STATE.sessions.map((s) => ({
+      ...s,
+      ownerId: currentAccount.uid,
+    }));
+    setStudyState((prev) => ({
+      ...prev,
+      sessions: mode === 'clear_all' ? [] : defaults,
+    }));
   };
 
   const handleUpdateWeeklyGoal = (weeklyGoalHours: number) => {
@@ -410,6 +465,17 @@ export default function App() {
     }
   };
 
+  const handleResetJourney = (mode: 'restore_defaults' | 'clear_all') => {
+    const defaults = INITIAL_STUDY_STATE.journal.map((j) => ({
+      ...j,
+      ownerId: currentAccount.uid,
+    }));
+    setStudyState((prev) => ({
+      ...prev,
+      journal: mode === 'clear_all' ? [] : defaults,
+    }));
+  };
+
   // Handlers for Todos (StudyTask Manager)
   const handleAddTask = (input: {
     title: string;
@@ -451,6 +517,49 @@ export default function App() {
     }
   };
 
+  const handleResetTasks = (mode: 'uncheck' | 'restore_defaults') => {
+    const updatedTasks = resetStudyTasks(
+      studyState.tasks,
+      mode,
+      currentAccount.uid
+    );
+    setStudyState((prev) => ({ ...prev, tasks: updatedTasks }));
+  };
+
+  const handleEnterFocusMode = (config?: {
+    durationMinutes?: number;
+    category?: StudyCategory;
+    taskTitle?: string;
+  }) => {
+    setFocusModeConfig({
+      durationMinutes: config?.durationMinutes ?? 25,
+      category: config?.category ?? 'Computer Science',
+      taskTitle: config?.taskTitle,
+    });
+    setIsFocusModeActive(true);
+  };
+
+  const handleCompleteFocusSession = (input: {
+    category: StudyCategory;
+    hours: number;
+    topic: string;
+    completedTaskId?: string;
+  }) => {
+    handleAddSession({
+      weekday: 'Thu',
+      category: input.category,
+      hours: input.hours,
+      topic: input.topic,
+    });
+    if (input.completedTaskId) {
+      const target = studyState.tasks.find((t) => t.id === input.completedTaskId);
+      if (target && !target.isCompleted) {
+        handleToggleTask(input.completedTaskId);
+      }
+    }
+    setIsFocusModeActive(false);
+  };
+
   const handleResetDemoData = () => {
     localStorage.removeItem(`lectra_user_workspace_v1_${currentAccount.uid}`);
     ensureSecondAccountSeed();
@@ -471,6 +580,20 @@ export default function App() {
   };
 
   const isDark = studyState.themePreference === 'dark';
+
+  // When Focus Mode is active, replace the main content and block all other UI elements until the study session is complete
+  if (isFocusModeActive) {
+    return (
+      <FocusModeView
+        initialDurationMinutes={focusModeConfig.durationMinutes}
+        initialCategory={focusModeConfig.category}
+        initialTaskTitle={focusModeConfig.taskTitle}
+        pendingTasks={studyState.tasks.filter((t) => !t.isCompleted)}
+        onCompleteSession={handleCompleteFocusSession}
+        onExitFocusMode={() => setIsFocusModeActive(false)}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 pb-20 md:pb-12 transition-colors">
@@ -584,27 +707,55 @@ export default function App() {
         </div>
       </header>
 
-      {/* Workspace Account Context Bar (Below the fold of the Top Bar) */}
+      {/* Workspace Account Context & Action Bar (Below the fold of the Top Bar) */}
       <div className="bg-slate-100/80 dark:bg-slate-900/70 border-b border-slate-200 dark:border-slate-800 transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-2 text-slate-600 dark:text-slate-400">
             <UserCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
-            <span className="font-semibold text-slate-900 dark:text-slate-100" data-testid="active-account-name">
+            <span
+              className="font-semibold text-slate-900 dark:text-slate-100"
+              data-testid="active-account-name"
+            >
               {currentAccount.displayName}
             </span>
             <span aria-hidden="true">·</span>
             <span className="font-mono text-slate-500 dark:text-slate-400">
-              {currentAccount.email || currentAccount.uid}
+              {currentAccount.phoneNumber || currentAccount.email || currentAccount.uid}
             </span>
             <span aria-hidden="true">·</span>
             <span className="text-slate-500 dark:text-slate-400">
               {currentAccount.isCloudSynced
                 ? 'Firebase Auth + Firestore Synced'
-                : 'Account-Scoped Local + Firebase Auth Ready'}
+                : `Saved Partition (${currentAccount.provider})`}
             </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            {/* Launch Minimal Distraction-Blocking Focus Mode */}
+            <button
+              type="button"
+              onClick={() => handleEnterFocusMode({ durationMinutes: 25, category: 'Computer Science' })}
+              data-testid="workspace-focus-mode-btn"
+              className="min-h-[34px] px-3 py-1 bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-500 text-white font-semibold rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
+            >
+              <Shield className="w-3.5 h-3.5" />
+              <span>Focus Mode</span>
+            </button>
+
+            {/* Launch Multi-Turn Gemini AI Mentor & Multi-Model Optimizer */}
+            <button
+              type="button"
+              onClick={() => {
+                setAiModalInitialTab('chat');
+                setIsAiModalOpen(true);
+              }}
+              data-testid="open-gemini-mentor-btn"
+              className="min-h-[34px] px-3 py-1 bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-semibold rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>AI Mentor & Optimizer</span>
+            </button>
+
             {/* Dark / Light Theme Toggle persisted in Firestore profile & account workspace */}
             <button
               type="button"
@@ -627,13 +778,17 @@ export default function App() {
               )}
             </button>
 
+            {/* Post-Download Sign-In (Google / Email / Mobile Number) */}
             <button
               type="button"
               onClick={() => setIsAuthModalOpen(true)}
-              className="min-h-[34px] px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium rounded-lg transition-colors whitespace-nowrap shrink-0"
+              data-testid="open-signin-modal-btn"
+              className="min-h-[34px] px-3 py-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
             >
-              Firebase & Friend Sign-In
+              <Smartphone className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>Sign In (Google / Email / Mobile)</span>
             </button>
+
             <button
               type="button"
               onClick={handleSignOut}
@@ -650,8 +805,50 @@ export default function App() {
               className="min-h-[34px] px-2.5 py-1 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 rounded-lg transition-colors flex items-center gap-1 whitespace-nowrap shrink-0"
             >
               <RotateCcw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Reset Data</span>
+              <span className="hidden sm:inline">Reset All</span>
             </button>
+          </div>
+        </div>
+
+        {/* Multi-User Saved Data Efficiency Partition Bar */}
+        <div
+          data-testid="multi-user-efficiency-bar"
+          className="max-w-7xl mx-auto px-4 sm:px-6 py-2 border-t border-slate-200/70 dark:border-slate-800/70 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-slate-400"
+        >
+          <div className="flex items-center gap-2">
+            <Database className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+            <span className="font-semibold text-slate-800 dark:text-slate-200">
+              Multi-User Saved Data Engine ({multiUserStorageOverview.totalUsersCount} Isolated Partitions · {multiUserStorageOverview.totalHoursAcrossUsers}h Total · O(1) Indexed Lookup):
+            </span>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {multiUserStorageOverview.users.map((item) => {
+              const isCurrent = item.uid === currentAccount.uid;
+              return (
+                <button
+                  key={item.uid}
+                  type="button"
+                  onClick={() =>
+                    handleSelectAccount({
+                      uid: item.uid,
+                      displayName: item.displayName,
+                      email: item.emailOrPhone.includes('@') ? item.emailOrPhone : null,
+                      phoneNumber: !item.emailOrPhone.includes('@') ? item.emailOrPhone : null,
+                      emailVerified: false,
+                      provider: item.provider,
+                      isCloudSynced: false,
+                    })
+                  }
+                  className={`min-h-[28px] px-2.5 py-1 rounded-md font-mono transition-colors whitespace-nowrap ${
+                    isCurrent
+                      ? 'bg-blue-600 text-white font-semibold'
+                      : 'bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {item.displayName.split(' ')[0]} · {item.totalStudyHours}h · {item.completedTasksCount}/{item.tasksCount} tasks · {item.gameXp} XP
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -663,8 +860,15 @@ export default function App() {
             state={studyState}
             onAddSession={handleAddSession}
             onDeleteSession={handleDeleteSession}
+            onResetSessions={handleResetSessions}
             onUpdateWeeklyGoal={handleUpdateWeeklyGoal}
             onNavigateTab={setActiveTab}
+            onEnterFocusMode={handleEnterFocusMode}
+            onOpenAiModal={(tab) => {
+              setAiModalInitialTab(tab);
+              setIsAiModalOpen(true);
+            }}
+            onAddTask={handleAddTask}
           />
         )}
 
@@ -673,6 +877,7 @@ export default function App() {
             journal={studyState.journal}
             onAddEntry={handleAddJournalEntry}
             onDeleteEntry={handleDeleteJournalEntry}
+            onResetJourney={handleResetJourney}
           />
         )}
 
@@ -683,6 +888,7 @@ export default function App() {
             onAddTask={handleAddTask}
             onToggleTask={handleToggleTask}
             onDeleteTask={handleDeleteTask}
+            onResetTasks={handleResetTasks}
             onToggleWidget={handleToggleWidget}
           />
         )}
@@ -693,6 +899,7 @@ export default function App() {
             currentAccountName={currentAccount.displayName}
             currentAccountUid={currentAccount.uid}
             onEarnXp={handleEarnGameXp}
+            onResetGameStats={handleResetGameStats}
             onConnectFriend={handleConnectFriend}
             onLogGameStudySession={(input) => {
               handleAddSession(input);
@@ -798,6 +1005,20 @@ export default function App() {
         isOpen={isLogModalOpen}
         onClose={() => setIsLogModalOpen(false)}
         onAddSession={handleAddSession}
+      />
+
+      <StudyChatbotModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        state={studyState}
+        studentName={currentAccount.displayName}
+        initialViewTab={aiModalInitialTab}
+        onAddOptimizedTask={(taskInput) => {
+          handleAddTask(taskInput);
+        }}
+        onLaunchFocusWithConfig={(config) => {
+          handleEnterFocusMode(config);
+        }}
       />
     </div>
   );

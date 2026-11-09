@@ -21,6 +21,7 @@ import {
   Award,
   Smartphone,
   Lock,
+  RotateCcw,
 } from 'lucide-react';
 
 interface TodoViewProps {
@@ -35,6 +36,7 @@ interface TodoViewProps {
   }) => string | undefined;
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
+  onResetTasks: (mode: 'uncheck' | 'restore_defaults') => void;
   onToggleWidget: (widgetId: string) => void;
 }
 
@@ -44,6 +46,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
   onAddTask,
   onToggleTask,
   onDeleteTask,
+  onResetTasks,
   onToggleWidget,
 }) => {
   const [categoryFilter, setCategoryFilter] = useState<StudyCategory | 'All'>('All');
@@ -51,6 +54,7 @@ export const TodoView: React.FC<TodoViewProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [achievementPeriod, setAchievementPeriod] = useState<AchievementPeriod>('daily');
   const [widgetSurfacePreview, setWidgetSurfacePreview] = useState<'home_screen' | 'lock_screen'>('home_screen');
+  const [resetBanner, setResetBanner] = useState<string | null>(null);
 
   // New StudyTask Form State
   const [title, setTitle] = useState<string>('');
@@ -324,7 +328,40 @@ export const TodoView: React.FC<TodoViewProps> = ({
                 </p>
               </div>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onResetTasks('uncheck');
+                    setStatusFilter('all');
+                    setResetBanner(
+                      'Reset all tasks to pending (0% completed) for a fresh study cycle.'
+                    );
+                  }}
+                  data-testid="reset-tasks-button"
+                  className="min-h-[34px] px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Reset Tasks</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onResetTasks('restore_defaults');
+                    setCategoryFilter('All');
+                    setStatusFilter('all');
+                    setSearchQuery('');
+                    setResetBanner(
+                      'Restored default subject checklist tasks.'
+                    );
+                  }}
+                  data-testid="restore-default-tasks-button"
+                  className="min-h-[34px] px-3 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-lg transition-colors whitespace-nowrap shrink-0"
+                >
+                  Restore Default List
+                </button>
+
                 <div
                   className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-lg"
                   role="group"
@@ -353,6 +390,17 @@ export const TodoView: React.FC<TodoViewProps> = ({
                 </div>
               </div>
             </div>
+
+            {resetBanner && (
+              <p
+                role="status"
+                data-testid="reset-tasks-status"
+                className="mt-3 text-xs font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5"
+              >
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <span>{resetBanner}</span>
+              </p>
+            )}
 
             {/* Search & Subject Filter Controls */}
             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">

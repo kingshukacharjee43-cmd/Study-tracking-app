@@ -5,8 +5,17 @@ import {
   StudyCategory,
   WEEKDAYS,
   Weekday,
+  GOOGLE_STUDENT_TRENDING_TOPICS,
 } from '../utils/studyEngine';
-import { BookOpen, Plus, Search, Trash2, CheckCircle2 } from 'lucide-react';
+import {
+  BookOpen,
+  Plus,
+  Search,
+  Trash2,
+  CheckCircle2,
+  RotateCcw,
+  Sparkles,
+} from 'lucide-react';
 
 interface JourneyViewProps {
   journal: JournalEntry[];
@@ -22,15 +31,19 @@ interface JourneyViewProps {
     syncToGraph: boolean;
   }) => string | undefined;
   onDeleteEntry: (id: string) => void;
+  onResetJourney: (mode: 'restore_defaults' | 'clear_all') => void;
 }
 
 export const JourneyView: React.FC<JourneyViewProps> = ({
   journal,
   onAddEntry,
   onDeleteEntry,
+  onResetJourney,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<StudyCategory | 'All'>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [statusBanner, setStatusBanner] = useState<string | null>(null);
+  const [sampleIdx, setSampleIdx] = useState<number>(0);
 
   // New Journal Entry Form State
   const [title, setTitle] = useState<string>('');
@@ -49,6 +62,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
     e.preventDefault();
     setError(null);
     setSuccessMsg(null);
+    setStatusBanner(null);
 
     const parsedHours = parseFloat(hoursLogged);
     const err = onAddEntry({
@@ -74,6 +88,29 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
     setSuccessMsg('Daily study reflection saved to your offline Journey log.');
   };
 
+  const handleQuickAddGoogleTopicReflection = () => {
+    const topicItem =
+      GOOGLE_STUDENT_TRENDING_TOPICS[
+        sampleIdx % GOOGLE_STUDENT_TRENDING_TOPICS.length
+      ];
+    setSampleIdx((prev) => prev + 1);
+    const hours = Math.round((topicItem.estimatedMinutes / 60) * 10) / 10;
+    onAddEntry({
+      title: topicItem.topicTitle,
+      category: topicItem.category,
+      date: '2026-11-09',
+      weekday: 'Mon',
+      hoursLogged: Math.max(0.5, hours),
+      focusRating: 5,
+      reflection: `${topicItem.whyStudentsSearchIt} Practiced active recall and derived core proofs (${topicItem.googleSearchTrendTag}).`,
+      keyTakeaway: topicItem.recallQuestion.explanation,
+      syncToGraph: true,
+    });
+    setStatusBanner(
+      `Added "${topicItem.topicTitle}" reflection (+${Math.max(0.5, hours)}h synced to graph).`
+    );
+  };
+
   const filteredEntries = journal.filter((entry) => {
     if (selectedCategory !== 'All' && entry.category !== selectedCategory) {
       return false;
@@ -89,6 +126,9 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
     }
     return true;
   });
+
+  const totalJournalHours =
+    Math.round(journal.reduce((acc, j) => acc + j.hoursLogged, 0) * 10) / 10;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
@@ -298,7 +338,7 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
         </form>
       </section>
 
-      {/* Right 7 Columns: Searchable & Filterable Study Journey Feed */}
+      {/* Right 7 Columns: Searchable & Filterable Study Journey Feed + Add/Reset Controls */}
       <section
         aria-labelledby="journey-feed-heading"
         className="lg:col-span-7 space-y-5"
@@ -312,13 +352,64 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
               >
                 Your Study Journey Log
               </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {filteredEntries.length} of {journal.length} entries shown · Stored offline on device
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono tabular-nums">
+                {filteredEntries.length} of {journal.length} entries · {totalJournalHours}h total reflected
               </p>
             </div>
 
-            {/* Search Input */}
-            <div className="relative w-full sm:w-64">
+            {/* Add / Reset Journey Stats & Entries Controls */}
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={handleQuickAddGoogleTopicReflection}
+                data-testid="add-trending-journal-btn"
+                className="min-h-[34px] px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>+ Add Google Topic Log</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onResetJourney('restore_defaults');
+                  setSelectedCategory('All');
+                  setSearchQuery('');
+                  setStatusBanner('Restored default Study Journey reflections.');
+                }}
+                data-testid="reset-journey-defaults-btn"
+                className="min-h-[34px] px-3 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap shrink-0"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Reset Journey</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onResetJourney('clear_all');
+                  setStatusBanner('Cleared all Journey entries for a fresh log.');
+                }}
+                className="min-h-[34px] px-2.5 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-medium rounded-lg transition-colors whitespace-nowrap shrink-0"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+
+          {statusBanner && (
+            <p
+              role="status"
+              className="mt-3 text-xs font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5"
+            >
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+              <span>{statusBanner}</span>
+            </p>
+          )}
+
+          {/* Search Input & Interactive Subject Filter Bar */}
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+            <div className="relative w-full">
               <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="search"
@@ -329,28 +420,27 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
                 className="w-full min-h-[40px] pl-9 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
               />
             </div>
-          </div>
 
-          {/* Interactive Subject Filter Bar */}
-          <div
-            className="flex items-center gap-1.5 overflow-x-auto pb-1 mt-4 pt-4 border-t border-slate-100 dark:border-slate-800"
-            role="group"
-            aria-label="Filter journal entries by subject"
-          >
-            {(['All', ...STUDY_CATEGORIES] as const).map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => setSelectedCategory(cat)}
-                className={`min-h-[36px] px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 ${
-                  selectedCategory === cat
-                    ? 'bg-slate-900 dark:bg-blue-600 text-white'
-                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
+            <div
+              className="flex flex-wrap items-center gap-1.5"
+              role="group"
+              aria-label="Filter journal entries by subject"
+            >
+              {(['All', ...STUDY_CATEGORIES] as const).map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`min-h-[36px] px-3 py-1.5 text-xs font-medium rounded-lg transition-colors whitespace-nowrap shrink-0 ${
+                    selectedCategory === cat
+                      ? 'bg-slate-900 dark:bg-blue-600 text-white'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-slate-100'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -361,18 +451,21 @@ export const JourneyView: React.FC<JourneyViewProps> = ({
               No study journal entries match your current filter.
             </p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-              Clear your search filter or log a new study reflection on the left.
+              Restore default entries or add a Google-trending study reflection above.
             </p>
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedCategory('All');
-                setSearchQuery('');
-              }}
-              className="mt-4 min-h-[40px] px-4 py-2 bg-slate-900 dark:bg-blue-600 text-white text-xs font-medium rounded-lg"
-            >
-              Reset Journal Filters
-            </button>
+            <div className="mt-4 flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedCategory('All');
+                  setSearchQuery('');
+                  onResetJourney('restore_defaults');
+                }}
+                className="min-h-[40px] px-4 py-2 bg-slate-900 dark:bg-blue-600 text-white text-xs font-medium rounded-lg"
+              >
+                Restore Default Journey Entries
+              </button>
+            </div>
           </div>
         ) : (
           <div className="space-y-4" data-testid="journal-entries-list">

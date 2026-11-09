@@ -188,38 +188,292 @@ export const PLAY_STORE_NAME_CANDIDATES: PlayStoreNameCandidate[] = [
   {
     title: 'Lectra: Study Timer & Checklist',
     charCount: 30,
-    positioning: 'Selected Official App Name — High-converting functional keywords with distinctive brand recall',
+    positioning: 'Selected Official App Name — High-converting functional keywords ("Study Timer" + "Checklist") with distinctive academic brand recall',
     primaryKeywords: ['Study Timer', 'Checklist', 'Study Tracker'],
   },
   {
-    title: 'StudyTrek: Study Log & Graphs',
-    charCount: 29,
-    positioning: 'High-volume organic search match for visual progress graphing',
-    primaryKeywords: ['Study Log', 'Study Graphs', 'Progress Tracker'],
+    title: 'StudyTrek: Focus Timer & Log',
+    charCount: 28,
+    positioning: 'Milestone & student journey metaphor ("Trek") paired with top-volume "Focus Timer" and "Study Log" queries',
+    primaryKeywords: ['Focus Timer', 'Study Log', 'Student Progress'],
   },
   {
-    title: 'ScholarTrek: Study Time Tracker',
+    title: 'Krono: Study Tracker & Pomodoro',
     charCount: 30,
-    positioning: 'Academic and university research focus',
-    primaryKeywords: ['Study Time Tracker', 'Academic Log'],
+    positioning: 'Short, memorable Gen-Z brand (from Chronos) targeting high-intent "Study Tracker" and "Pomodoro" searches',
+    primaryKeywords: ['Study Tracker', 'Pomodoro', 'Focus Timer'],
   },
   {
-    title: 'Krono: Study Hours & Todo Log',
-    charCount: 29,
-    positioning: 'Short, memorable Gen-Z friendly brand with exact-match todo keywords',
-    primaryKeywords: ['Study Hours', 'Todo Log', 'Focus'],
-  },
-  {
-    title: 'AcaTrack: Study Graphs & Todo',
-    charCount: 29,
-    positioning: 'Clear academic positioning combining visual analytics and task checklists',
-    primaryKeywords: ['Academic Tracker', 'Study Graphs', 'Todo'],
-  },
-  {
-    title: 'OpenStudy: Offline Study Graph',
+    title: 'ScholarPulse: Study Time & Goal',
     charCount: 30,
-    positioning: 'Open-source & privacy-first student community positioning',
-    primaryKeywords: ['Offline Study', 'Open Source', 'Study Graph'],
+    positioning: 'Emphasizes Digital Wellbeing rhythm ("Pulse"), daily/weekly study time analytics, and goal streaks',
+    primaryKeywords: ['Study Time', 'Study Goal', 'Scholar Tracker'],
+  },
+  {
+    title: 'FocusArc: Study Timer & Graphs',
+    charCount: 30,
+    positioning: 'Highlights the visual growth curve ("Arc") of the weekly study progress graph and distraction-blocking timer',
+    primaryKeywords: ['Study Timer', 'Study Graphs', 'Focus Mode'],
+  },
+  {
+    title: 'AcaTrack: Student Todo & Timer',
+    charCount: 30,
+    positioning: 'Direct academic positioning combining university task management ("Student Todo") with timed study blocks',
+    primaryKeywords: ['Student Todo', 'Study Timer', 'Academic Tracker'],
+  },
+  {
+    title: 'DeepLog: Focus Timer & Study',
+    charCount: 28,
+    positioning: 'Targets "Deep Work" learners searching for distraction-blocking Focus Mode and structured study logging',
+    primaryKeywords: ['Focus Timer', 'Deep Work', 'Study Log'],
+  },
+  {
+    title: 'Zenith: Study Progress & Tasks',
+    charCount: 30,
+    positioning: 'Aspirational achievement brand ("Zenith") built around student progress milestones and subject task checklists',
+    primaryKeywords: ['Study Progress', 'Study Tasks', 'Goal Tracker'],
+  },
+  {
+    title: 'Veloce: Study Sprint & Tracker',
+    charCount: 30,
+    positioning: 'Dynamic brand capturing exam-sprint velocity, gamified active-recall quizzes, and study hour tracking',
+    primaryKeywords: ['Study Sprint', 'Study Tracker', 'Exam Timer'],
+  },
+  {
+    title: 'OpenStudy: Offline Focus Timer',
+    charCount: 30,
+    positioning: 'Privacy-first, open-source student community positioning with offline-first local + cloud storage',
+    primaryKeywords: ['Offline Focus Timer', 'OpenStudy', 'Study Log'],
+  },
+];
+
+export interface GoogleTrendingStudyTopic {
+  id: string;
+  topicTitle: string;
+  category: StudyCategory;
+  googleSearchTrendTag: string;
+  monthlySearchSignal: string;
+  estimatedMinutes: number;
+  priority: 'High' | 'Medium' | 'Low';
+  whyStudentsSearchIt: string;
+  sourceUrl: string;
+  sourceTitle: string;
+  recallQuestion: {
+    prompt: string;
+    options: string[];
+    correctIndex: number;
+    explanation: string;
+  };
+}
+
+export const GOOGLE_STUDENT_TRENDING_TOPICS: GoogleTrendingStudyTopic[] = [
+  {
+    id: 'gtrend-1',
+    topicTitle: 'Dynamic Programming, Memoization & Graph BFS/DFS Patterns',
+    category: 'Computer Science',
+    googleSearchTrendTag: 'Top Google Search · Technical Interviews & CS Algorithms',
+    monthlySearchSignal: '+185% YoY student search interest',
+    estimatedMinutes: 60,
+    priority: 'High',
+    whyStudentsSearchIt:
+      'Most searched computer science topic on Google for university midterms and software engineering internship prep.',
+    sourceUrl: 'https://techdevguide.withgoogle.com/',
+    sourceTitle: 'Google Tech Dev Guide — Data Structures & Algorithms',
+    recallQuestion: {
+      prompt:
+        'Google Trending Topic — Dynamic Programming: What is the key condition that allows a recursive problem to be optimized via memoization or tabulation?',
+      options: [
+        'Overlapping subproblems and optimal substructure',
+        'Strictly exponential branching with zero repeated states',
+        'Unbounded mutable global variables without base cases',
+        'Sorting the input array in O(n!) time complexity',
+      ],
+      correctIndex: 0,
+      explanation:
+        'Dynamic Programming caches solutions to overlapping subproblems that exhibit optimal substructure.',
+    },
+  },
+  {
+    id: 'gtrend-2',
+    topicTitle: 'Transformer Self-Attention, LLM Tokenization & Backpropagation',
+    category: 'Computer Science',
+    googleSearchTrendTag: 'Breakout Google Search · AI & Machine Learning Courses',
+    monthlySearchSignal: '+310% YoY student search interest',
+    estimatedMinutes: 50,
+    priority: 'High',
+    whyStudentsSearchIt:
+      'Breakout university search trend as students study scaled dot-product attention and neural network gradients.',
+    sourceUrl: 'https://developers.google.com/machine-learning/crash-course',
+    sourceTitle: 'Google Machine Learning Crash Course',
+    recallQuestion: {
+      prompt:
+        'Google Trending Topic — Transformer Self-Attention: Why do we divide the query-key dot product QK^T by sqrt(d_k) before applying softmax?',
+      options: [
+        'To prevent large dot products from pushing softmax into regions with vanishingly small gradients',
+        'To convert floating-point weights into 1-bit integers',
+        'To eliminate the value matrix V from the attention layer',
+        'To force recurrent sequential processing across tokens',
+      ],
+      correctIndex: 0,
+      explanation:
+        'Scaling by 1/sqrt(d_k) keeps variance stable so softmax gradients do not vanish for large embedding dimensions.',
+    },
+  },
+  {
+    id: 'gtrend-3',
+    topicTitle: 'Calculus II: Integration by Parts, Taylor Series & Convergence Tests',
+    category: 'Mathematics',
+    googleSearchTrendTag: 'Top Google Search · STEM Freshman & AP Calculus BC',
+    monthlySearchSignal: '+140% exam-season search volume',
+    estimatedMinutes: 45,
+    priority: 'High',
+    whyStudentsSearchIt:
+      'Consistently the #1 most-searched university mathematics topic during midterm and final exam weeks.',
+    sourceUrl: 'https://ocw.mit.edu/courses/18-01sc-single-variable-calculus-fall-2010/',
+    sourceTitle: 'MIT OpenCourseWare — Single Variable Calculus',
+    recallQuestion: {
+      prompt:
+        'Google Trending Topic — Taylor Series & Integration: Which formula represents Integration by Parts derived from the product rule?',
+      options: [
+        '∫ u dv = u·v - ∫ v du',
+        '∫ u dv = u·v + ∫ u du',
+        '∫ u dv = (du/dx) · (dv/dx)',
+        '∫ u dv = ln|u| + ln|v|',
+      ],
+      correctIndex: 0,
+      explanation:
+        'Integrating d(uv) = u dv + v du yields ∫ u dv = uv - ∫ v du.',
+    },
+  },
+  {
+    id: 'gtrend-4',
+    topicTitle: 'Linear Algebra: SVD, PCA Dimensionality Reduction & Eigenvalues',
+    category: 'Mathematics',
+    googleSearchTrendTag: 'High-Demand Google Search · Data Science & Math',
+    monthlySearchSignal: '+165% YoY student search interest',
+    estimatedMinutes: 55,
+    priority: 'High',
+    whyStudentsSearchIt:
+      'Essential bridge between pure university Linear Algebra and Principal Component Analysis (PCA) in machine learning.',
+    sourceUrl: 'https://ocw.mit.edu/courses/18-06-linear-algebra-spring-2010/',
+    sourceTitle: 'MIT 18.06 Linear Algebra Reference',
+    recallQuestion: {
+      prompt:
+        'Google Trending Topic — Singular Value Decomposition (SVD): How do the singular values σ_i of matrix A relate to the eigenvalues of A^T A?',
+      options: [
+        'The singular values σ_i are the non-negative square roots of the eigenvalues of A^T A',
+        'The singular values are always negative reciprocals of the trace of A',
+        'SVD only exists for square invertible 2x2 matrices',
+        'Singular values equal the sum of each row divided by matrix rank',
+      ],
+      correctIndex: 0,
+      explanation:
+        'For any m×n matrix A, σ_i = sqrt(λ_i(A^T A)).',
+    },
+  },
+  {
+    id: 'gtrend-5',
+    topicTitle: 'Electromagnetism: Gauss’s Law, Faraday Induction & RC/RLC Circuits',
+    category: 'Physics',
+    googleSearchTrendTag: 'Top Google Search · University Physics II & Pre-Med MCAT',
+    monthlySearchSignal: '+150% exam-season search volume',
+    estimatedMinutes: 50,
+    priority: 'Medium',
+    whyStudentsSearchIt:
+      'Top physics search query for engineering and pre-med students mastering Maxwell’s equations and circuit transients.',
+    sourceUrl: 'https://openstax.org/details/books/university-physics-volume-2',
+    sourceTitle: 'OpenStax University Physics Volume 2',
+    recallQuestion: {
+      prompt:
+        'Google Trending Topic — Gauss’s Law: What does the net electric flux through any closed Gaussian surface depend on?',
+      options: [
+        'Only the net electric charge enclosed within the surface divided by ε_0',
+        'The radius and surface area of the sphere regardless of enclosed charge',
+        'External charges located outside the closed Gaussian surface',
+        'The magnetic permeability of free space μ_0',
+      ],
+      correctIndex: 0,
+      explanation:
+        'By Gauss’s Law, ∮ E · dA = Q_enclosed / ε_0.',
+    },
+  },
+  {
+    id: 'gtrend-6',
+    topicTitle: 'Distributed Caching, Consistent Hashing, Sharding & Rate Limiting',
+    category: 'Systems Design',
+    googleSearchTrendTag: 'Top Google Search · Cloud Architecture & Backend Systems',
+    monthlySearchSignal: '+220% YoY student search interest',
+    estimatedMinutes: 45,
+    priority: 'High',
+    whyStudentsSearchIt:
+      'Heavily searched by senior CS students preparing for distributed systems exams and cloud architecture interviews.',
+    sourceUrl: 'https://sre.google/books/',
+    sourceTitle: 'Google Site Reliability Engineering (SRE) Workbook',
+    recallQuestion: {
+      prompt:
+        'Google Trending Topic — Consistent Hashing: What is the primary advantage of Consistent Hashing in a distributed cache cluster?',
+      options: [
+        'Adding or removing a node only remaps ~K/N keys instead of rehashing the entire keyspace',
+        'It eliminates the need for network sockets between servers',
+        'It guarantees zero cache misses even when RAM is empty',
+        'It stores all database tables on a single unindexed disk partition',
+      ],
+      correctIndex: 0,
+      explanation:
+        'Consistent hashing minimizes key movement when cluster nodes scale up or down.',
+    },
+  },
+  {
+    id: 'gtrend-7',
+    topicTitle: 'Academic Essay Argumentation, Rhetorical Analysis & Citation Synthesis',
+    category: 'Literature',
+    googleSearchTrendTag: 'Top Google Search · University Humanities & AP Seminar',
+    monthlySearchSignal: '+130% semester search volume',
+    estimatedMinutes: 40,
+    priority: 'Medium',
+    whyStudentsSearchIt:
+      'Widely searched by students structuring thesis statements, primary-source evidence, and counterarguments.',
+    sourceUrl: 'https://owl.purdue.edu/',
+    sourceTitle: 'Academic Writing & Citation Guide',
+    recallQuestion: {
+      prompt:
+        'Google Trending Topic — Rhetorical Synthesis: What makes an academic thesis statement defensible and analytical?',
+      options: [
+        'It makes a specific, evidence-backed claim that requires proof rather than stating an obvious plot summary',
+        'It lists general dictionary definitions without taking a position',
+        'It avoids citing any primary or peer-reviewed sources',
+        'It repeats the essay prompt word-for-word in every paragraph',
+      ],
+      correctIndex: 0,
+      explanation:
+        'Strong academic theses present an arguable claim supported by textual evidence and synthesis.',
+    },
+  },
+  {
+    id: 'gtrend-8',
+    topicTitle: 'Spaced Repetition (SRS) Active Recall & CEFR B2/C1 Fluency Immersion',
+    category: 'Languages',
+    googleSearchTrendTag: 'Top Google Search · Language Acquisition & IELTS/TOEFL',
+    monthlySearchSignal: '+175% YoY student search interest',
+    estimatedMinutes: 35,
+    priority: 'Medium',
+    whyStudentsSearchIt:
+      'Searched by students combining Leitner/SM-2 spaced repetition intervals with active production for proficiency exams.',
+    sourceUrl: 'https://scholar.google.com/',
+    sourceTitle: 'Cognitive Psychology of Spaced Retrieval Practice',
+    recallQuestion: {
+      prompt:
+        'Google Trending Topic — Spaced Repetition & Retrieval Practice: Why does active recall outperform passive re-reading for long-term vocabulary and concept retention?',
+      options: [
+        'Retrieving information from memory strengthens neural pathways and expands optimal review intervals (the testing effect)',
+        'Passive re-reading guarantees 100% retention after a single glance',
+        'Cramming all reviews into a single 10-minute window prevents forgetting',
+        'Skipping difficult flashcards improves exam scores',
+      ],
+      correctIndex: 0,
+      explanation:
+        'Effortful retrieval at expanding intervals consolidates long-term memory traces.',
+    },
   },
 ];
 
@@ -433,6 +687,59 @@ export function toggleStudyTask(tasks: StudyTask[], taskId: string): StudyTask[]
 
 export function deleteStudyTask(tasks: StudyTask[], taskId: string): StudyTask[] {
   return tasks.filter((task) => task.id !== taskId);
+}
+
+export function resetStudyTasks(
+  tasks: StudyTask[],
+  mode: 'uncheck' | 'restore_defaults' = 'uncheck',
+  ownerId?: string
+): StudyTask[] {
+  if (mode === 'restore_defaults') {
+    return INITIAL_STUDY_STATE.tasks.map((t) => ({
+      ...t,
+      ownerId: ownerId || t.ownerId,
+      isCompleted: false,
+    }));
+  }
+  return tasks.map((task) => ({
+    ...task,
+    isCompleted: false,
+  }));
+}
+
+export function validateMobileSignInInput(input: {
+  phoneNumber: string;
+  otpCode: string;
+  displayName?: string;
+}): {
+  uid?: string;
+  normalizedPhone?: string;
+  displayName?: string;
+  error?: string;
+} {
+  const digitsOnly = input.phoneNumber.replace(/[^0-9+]/g, '');
+  const numericCount = digitsOnly.replace(/[^0-9]/g, '').length;
+  if (numericCount < 10 || numericCount > 15) {
+    return {
+      error: 'Please enter a valid 10–15 digit mobile number (e.g. +1 650-555-0199).',
+    };
+  }
+  const cleanOtp = input.otpCode.trim();
+  if (!/^\d{6}$/.test(cleanOtp)) {
+    return {
+      error: 'Please enter the 6-digit SMS verification code (e.g. 482910).',
+    };
+  }
+  const normalizedPhone = digitsOnly.startsWith('+') ? digitsOnly : `+${digitsOnly}`;
+  const uid = `mobile-${digitsOnly.replace(/[^0-9]/g, '')}`;
+  const displayName =
+    input.displayName?.trim() ||
+    `Student (${normalizedPhone.slice(0, 4)}···${normalizedPhone.slice(-4)})`;
+  return {
+    uid,
+    normalizedPhone,
+    displayName,
+  };
 }
 
 export function readStudyTasks(
@@ -1121,6 +1428,22 @@ export function generateStudyGameQuestions(
     });
   }
 
+  // Include Google Search Trending Student Topics in the Study Game Arena
+  for (const trend of GOOGLE_STUDENT_TRENDING_TOPICS) {
+    if (categoryFilter !== 'All' && trend.category !== categoryFilter) continue;
+    questions.push({
+      id: `q-gtrend-${trend.id}`,
+      category: trend.category,
+      sourceLabel: `${trend.googleSearchTrendTag} (${trend.monthlySearchSignal})`,
+      topicTitle: trend.topicTitle,
+      prompt: trend.recallQuestion.prompt,
+      options: trend.recallQuestion.options,
+      correctIndex: trend.recallQuestion.correctIndex,
+      explanation: trend.recallQuestion.explanation,
+      xpReward: 135,
+    });
+  }
+
   return questions;
 }
 
@@ -1295,6 +1618,42 @@ class AuthService {
     final userCred = await _auth.signInWithCredential(credential);
     if (userCred.user != null) {
       await _ensureUserProfile(userCred.user!);
+    }
+    return userCred;
+  }
+
+  /// Mobile Number (SMS OTP) Sign-In for Android / iOS after downloading the app
+  Future<void> verifyMobileNumber({
+    required String phoneNumber,
+    required void Function(String verificationId, int? resendToken) onCodeSent,
+    required void Function(FirebaseAuthException error) onError,
+  }) async {
+    await _auth.verifyPhoneNumber(
+      phoneNumber: phoneNumber.trim(),
+      verificationCompleted: (PhoneAuthCredential credential) async {
+        final userCred = await _auth.signInWithCredential(credential);
+        if (userCred.user != null) {
+          await _ensureUserProfile(userCred.user!);
+        }
+      },
+      verificationFailed: onError,
+      codeSent: onCodeSent,
+      codeAutoRetrievalTimeout: (String verificationId) {},
+    );
+  }
+
+  Future<UserCredential> confirmMobileOtp({
+    required String verificationId,
+    required String smsCode,
+    String? displayName,
+  }) async {
+    final credential = PhoneAuthProvider.credential(
+      verificationId: verificationId,
+      smsCode: smsCode.trim(),
+    );
+    final userCred = await _auth.signInWithCredential(credential);
+    if (userCred.user != null) {
+      await _ensureUserProfile(userCred.user!, displayName: displayName);
     }
     return userCred;
   }
